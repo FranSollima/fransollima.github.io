@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<title>Pokémon EV Assistant</title>
+		<link rel="stylesheet" type="text/css" href="pokemon_ev_assistant.css">
+		<script src="pokemon_ev_assistant.js"></script>
+	</head>
+	<body>
+		<div id="ev_container" class="container">
+			<p class="title">Pokémon Effort Values Assistant</p>
+			<table class="table ev_table">
+				<tr>
+					<td>EV</td>
+					<td>HP</td>
+					<td>Attack</td>
+					<td>Defense</td>
+					<td>Sp. Atk</td>
+					<td>Sp. Def</td>
+					<td>Speed</td>
+				</tr>
+				<tr>
+					<td>Actuales</td>
+					<td><input type="number" id="hp_act" onchange="update_colors()" value="0"></td>
+					<td><input type="number" id="atk_act" onchange="update_colors()" value="0"></td>
+					<td><input type="number" id="def_act" onchange="update_colors()" value="0"></td>
+					<td><input type="number" id="spa_act" onchange="update_colors()" value="0"></td>
+					<td><input type="number" id="spd_act" onchange="update_colors()" value="0"></td>
+					<td><input type="number" id="spe_act" onchange="update_colors()" value="0"></td>
+				</tr>
+				<tr>
+					<td>Objetivos</td>
+					<td><input type="number" id="hp_obj" onchange="update_colors()" value="0"></td>
+					<td><input type="number" id="atk_obj" onchange="update_colors()" value="0"></td>
+					<td><input type="number" id="def_obj" onchange="update_colors()" value="0"></td>
+					<td><input type="number" id="spa_obj" onchange="update_colors()" value="0"></td>
+					<td><input type="number" id="spd_obj" onchange="update_colors()" value="0"></td>
+					<td><input type="number" id="spe_obj" onchange="update_colors()" value="0"></td>
+				</tr>
+			</table>
+			<input type="checkbox" id="macho_brace">
+		</div>
+		<div id="buttons_container" class="container">
+			<ul>
+				<script src="pokemon_buttons.js"></script>
+			</ul>
+		</div>
+		<div id="list_container" class="container">
+			<input id="pokemon_list" list="pokemons" name="selected_pokemon">
+			<datalist id="pokemons">
+				<script src="pokemon_list.js"></script>
+			</datalist>
+			<input type="submit" onclick="display_pokemon()">
+		</div>
+	</body>
+</html>

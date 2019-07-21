@@ -1,0 +1,42 @@
+body {
+	font-family: arial, sans-serif;
+}
+.container {
+	padding: 2em 0;
+}
+.title {
+	font-size: 3em;
+	text-align: center;
+}
+table {
+	border-collapse: collapse;
+	width: 100%;
+	table-layout: fixed;
+}
+td, th {
+	border: 1px solid #bbbbbb;
+	text-align: center;
+	padding: 0.5em;
+}
+.ev_table {
+	margin: auto;
+	width: 90%;
+	font-size: 1.5em;
+}
+td input {
+	width: -webkit-fill-available;
+}
+.container {
+	border: 1px solid black;
+}
+#buttons_container ul {
+	list-style-type: none;
+}
+.pokemon_button {
+	display: none;
+	margin: 1.5em 3em;
+	padding: 1em;
+	border: 2px solid black;
+	border-radius: 1em;
+	text-align: center;
+}
