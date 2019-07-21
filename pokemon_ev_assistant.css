@@ -5,7 +5,7 @@ body {
 	padding: 2em 0;
 }
 .title {
-	font-size: 3em;
+	font-size: 4em;
 	text-align: center;
 }
 table {
@@ -19,13 +19,21 @@ td, th {
 	padding: 0.5em;
 }
 .ev_table {
-	margin: auto;
+	margin: 2em auto;
 	width: 90%;
 	font-size: 1.5em;
 }
 td input {
 	width: -webkit-fill-available;
 	font-size: 1em;
+}
+#macho_brace {
+	font-size: 2em;
+	margin: 5%;
+}
+#macho_brace_checkbox {
+	transform: scale(2.5);
+	margin-right: 1.5em;
 }
 #buttons_container ul {
 	list-style-type: none;

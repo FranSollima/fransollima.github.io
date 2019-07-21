@@ -8,7 +8,7 @@
 	</head>
 	<body>
 		<div id="ev_container" class="container">
-			<p class="title">Pokémon Effort Values Assistant</p>
+			<p class="title">Pokémon EVs Assistant</p>
 			<table class="table ev_table">
 				<tr>
 					<td>EV</td>
@@ -21,24 +21,27 @@
 				</tr>
 				<tr>
 					<td>Actuales</td>
-					<td><input type="number" id="hp_act" onchange="update_colors()" value="0"></td>
-					<td><input type="number" id="atk_act" onchange="update_colors()" value="0"></td>
-					<td><input type="number" id="def_act" onchange="update_colors()" value="0"></td>
-					<td><input type="number" id="spa_act" onchange="update_colors()" value="0"></td>
-					<td><input type="number" id="spd_act" onchange="update_colors()" value="0"></td>
-					<td><input type="number" id="spe_act" onchange="update_colors()" value="0"></td>
+					<td><input type="number" id="hp_act" onchange="update_colors()" placeholder="0"></td>
+					<td><input type="number" id="atk_act" onchange="update_colors()" placeholder="0"></td>
+					<td><input type="number" id="def_act" onchange="update_colors()" placeholder="0"></td>
+					<td><input type="number" id="spa_act" onchange="update_colors()" placeholder="0"></td>
+					<td><input type="number" id="spd_act" onchange="update_colors()" placeholder="0"></td>
+					<td><input type="number" id="spe_act" onchange="update_colors()" placeholder="0"></td>
 				</tr>
 				<tr>
 					<td>Objetivos</td>
-					<td><input type="number" id="hp_obj" onchange="update_colors()" value="0"></td>
-					<td><input type="number" id="atk_obj" onchange="update_colors()" value="0"></td>
-					<td><input type="number" id="def_obj" onchange="update_colors()" value="0"></td>
-					<td><input type="number" id="spa_obj" onchange="update_colors()" value="0"></td>
-					<td><input type="number" id="spd_obj" onchange="update_colors()" value="0"></td>
-					<td><input type="number" id="spe_obj" onchange="update_colors()" value="0"></td>
+					<td><input type="number" id="hp_obj" onchange="update_colors()" placeholder="0"></td>
+					<td><input type="number" id="atk_obj" onchange="update_colors()" placeholder="0"></td>
+					<td><input type="number" id="def_obj" onchange="update_colors()" placeholder="0"></td>
+					<td><input type="number" id="spa_obj" onchange="update_colors()" placeholder="0"></td>
+					<td><input type="number" id="spd_obj" onchange="update_colors()" placeholder="0"></td>
+					<td><input type="number" id="spe_obj" onchange="update_colors()" placeholder="0"></td>
 				</tr>
 			</table>
-			<input type="checkbox" id="macho_brace">
+
+			<div id="macho_brace">
+				<input type="checkbox" id="macho_brace_checkbox" onchange="update_colors()">Macho Brace
+			</div>
 		</div>
 		<div id="buttons_container" class="container">
 			<ul>
