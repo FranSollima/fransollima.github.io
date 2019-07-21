@@ -1,3 +1,3 @@
-for (var i = pokemon_evs.length - 1; i >= 0; i--) {
+for (var i = 0; i < pokemon_evs.length; i++) {
 	document.write('<option value="'+pokemon_evs[i].name+'">');
 };

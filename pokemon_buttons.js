@@ -1,4 +1,4 @@
-for (var i = pokemon_evs.length - 1; i >= 0; i--) {
+for (var i = 0; i < pokemon_evs.length; i++) {
 	var ev_pokemon = '';
 	if(pokemon_evs[i].hp>0){ ev_pokemon = ev_pokemon + ' HP=' + pokemon_evs[i].hp;}
 	if(pokemon_evs[i].atk>0){ ev_pokemon = ev_pokemon + ' ATK=' + pokemon_evs[i].atk;}
