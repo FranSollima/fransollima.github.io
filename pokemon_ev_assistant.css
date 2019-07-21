@@ -27,11 +27,11 @@ td input {
 	width: -webkit-fill-available;
 	font-size: 1em;
 }
-#macho_brace {
+.checks_ev_multiplier {
 	font-size: 2em;
-	margin: 5%;
+	margin: 2% 5%;
 }
-#macho_brace_checkbox {
+.checks_ev_multiplier input {
 	transform: scale(2.5);
 	margin-right: 1.5em;
 }

@@ -4,6 +4,7 @@
 		<meta charset="UTF-8">
 		<title>Pokémon EV Assistant</title>
 		<link rel="stylesheet" type="text/css" href="pokemon_ev_assistant.css">
+		<script src="load_pokemon_evs.js"></script>
 		<script src="pokemon_ev_assistant.js"></script>
 	</head>
 	<body>
@@ -39,8 +40,12 @@
 				</tr>
 			</table>
 
-			<div id="macho_brace">
-				<input type="checkbox" id="macho_brace_checkbox" onchange="update_colors()">Macho Brace
+			<div id="macho_brace" class="checks_ev_multiplier">
+				<input type="checkbox" id="macho_brace_checkbox" onchange="update_colors()">Macho Brace (x2)
+			</div>
+
+			<div id="horde" class="checks_ev_multiplier">
+				<input type="checkbox" id="horde_checkbox" onchange="update_colors()">Horde (x5)
 			</div>
 		</div>
 		<div id="buttons_container" class="container">
