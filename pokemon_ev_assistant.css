@@ -39,6 +39,7 @@ td input {
 	list-style-type: none;
 }
 .pokemon_button {
+	font-size: 1.5em;
 	display: none;
 	background-color: lightgray;
 	margin: 1.5em 3em;

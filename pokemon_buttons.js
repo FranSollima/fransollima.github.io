@@ -9,5 +9,5 @@ for (var i = pokemon_evs.length - 1; i >= 0; i--) {
 	document.write('<li class="pokemon_button" id="'+pokemon_evs[i].id+'" name="'+pokemon_evs[i].name+'" \
 					hp="'+pokemon_evs[i].hp+'" atk="'+pokemon_evs[i].atk+'" def="'+pokemon_evs[i].def+'" \
 					spa="'+pokemon_evs[i].spa+'" spd="'+pokemon_evs[i].spd+'" spe="'+pokemon_evs[i].spe+'" \
-					onclick="add_effort_values(this.id, this.name)">#'+pokemon_evs[i].id+' - '+pokemon_evs[i].name+' -'+ev_pokemon+'</li>');
+					onclick="add_effort_values(this)">#'+pokemon_evs[i].id+' - '+pokemon_evs[i].name+' -'+ev_pokemon+'</li>');
 };

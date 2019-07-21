@@ -59,16 +59,16 @@ function complete_evs(){
 	if(!document.getElementById('spd_obj').value){ document.getElementById('spd_obj').value = "0"};
 	if(!document.getElementById('spe_obj').value){ document.getElementById('spe_obj').value = "0"};
 }
-function add_effort_values(pokemon_id, pokemon_name){
+function add_effort_values(pokemon){
 	var ev_multiplier = get_ev_multiplier();
-	if(confirm("Add EVs from "+pokemon_name+"?")){
+	if(confirm("Add EVs from "+pokemon.getAttribute("name")+"?")){
 		complete_evs();
-		document.getElementById('hp_act').value = parseInt(document.getElementById('hp_act').value) + ev_multiplier*parseInt(document.getElementById(pokemon_id).getAttribute('hp'));
-		document.getElementById('atk_act').value = parseInt(document.getElementById('atk_act').value) + ev_multiplier*parseInt(document.getElementById(pokemon_id).getAttribute('atk'));
-		document.getElementById('def_act').value = parseInt(document.getElementById('def_act').value) + ev_multiplier*parseInt(document.getElementById(pokemon_id).getAttribute('def'));
-		document.getElementById('spa_act').value = parseInt(document.getElementById('spa_act').value) + ev_multiplier*parseInt(document.getElementById(pokemon_id).getAttribute('spa'));
-		document.getElementById('spd_act').value = parseInt(document.getElementById('spd_act').value) + ev_multiplier*parseInt(document.getElementById(pokemon_id).getAttribute('spd'));
-		document.getElementById('spe_act').value = parseInt(document.getElementById('spe_act').value) + ev_multiplier*parseInt(document.getElementById(pokemon_id).getAttribute('spe'));
+		document.getElementById('hp_act').value = parseInt(document.getElementById('hp_act').value) + ev_multiplier*parseInt(pokemon.getAttribute('hp'));
+		document.getElementById('atk_act').value = parseInt(document.getElementById('atk_act').value) + ev_multiplier*parseInt(pokemon.getAttribute('atk'));
+		document.getElementById('def_act').value = parseInt(document.getElementById('def_act').value) + ev_multiplier*parseInt(pokemon.getAttribute('def'));
+		document.getElementById('spa_act').value = parseInt(document.getElementById('spa_act').value) + ev_multiplier*parseInt(pokemon.getAttribute('spa'));
+		document.getElementById('spd_act').value = parseInt(document.getElementById('spd_act').value) + ev_multiplier*parseInt(pokemon.getAttribute('spd'));
+		document.getElementById('spe_act').value = parseInt(document.getElementById('spe_act').value) + ev_multiplier*parseInt(pokemon.getAttribute('spe'));
 		update_colors();
 	}
 };
