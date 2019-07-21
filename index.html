@@ -46,11 +46,13 @@
 			</ul>
 		</div>
 		<div id="list_container" class="container">
-			<input id="pokemon_list" list="pokemons" name="selected_pokemon">
-			<datalist id="pokemons">
-				<script src="pokemon_list.js"></script>
-			</datalist>
-			<input type="submit" onclick="display_pokemon()">
+			<form id="pokemon_list_form" onsubmit="event.preventDefault();display_pokemon()">
+				<input id="pokemon_list" list="pokemons" name="selected_pokemon">
+				<datalist id="pokemons">
+					<script src="pokemon_list.js"></script>
+				</datalist>
+				<input id="pokemon_list_form_submit" type="submit" value="Add Pokémon">
+			</form>
 		</div>
 	</body>
 </html>

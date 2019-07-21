@@ -25,18 +25,31 @@ td, th {
 }
 td input {
 	width: -webkit-fill-available;
-}
-.container {
-	border: 1px solid black;
+	font-size: 1em;
 }
 #buttons_container ul {
 	list-style-type: none;
 }
 .pokemon_button {
 	display: none;
+	background-color: lightgray;
 	margin: 1.5em 3em;
 	padding: 1em;
 	border: 2px solid black;
 	border-radius: 1em;
 	text-align: center;
+}
+#pokemon_list_form {
+	width: 80%;
+	margin: auto;
+}
+#pokemon_list_form input {
+	font-size: 1.5em;
+	padding: 1em;
+	border-radius: 1em;
+	text-align: center;
+}
+#pokemon_list {
+	width: 50%;
+	margin: 1.5em;
 }
