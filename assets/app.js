@@ -1,0 +1,408 @@
+// ─── CONFIG ──────────────────────────────────────────────────────────────────
+// MARCADOR_CUENTA: "reglamentario" → puntaje basado en resultado a los 90'.
+// Cambiá a "final" para incluir goles de prórroga y penales.
+// ADVERTENCIA: ESPN no expone desglose por período en su API de soccer. Si un
+// partido llega a prórroga, el campo `score` puede incluir goles de ET.
+// Cuando aparezcan partidos de fase eliminatoria, verificar el comportamiento.
+const MARCADOR_CUENTA = "reglamentario";
+
+const ESPN_URL =
+  "https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard" +
+  "?limit=200&dates=20260611-20260719";
+
+const POLL_LIVE_MS = 45_000;   // 45 s — hay al menos un partido en vivo
+const POLL_IDLE_MS = 300_000;  // 5 min — no hay partidos en vivo
+
+// ─── STATE ───────────────────────────────────────────────────────────────────
+let pollTimer   = null;
+let lastUpdated = null;
+let equiposMap  = null;
+let predicciones = null;
+
+// ─── CSV PARSER ──────────────────────────────────────────────────────────────
+function parseCSV(text, sep = ";") {
+  const lines = text.trim().split(/\r?\n/);
+  if (lines.length < 2) return [];
+  const headers = lines[0].split(sep).map(h => h.trim());
+  return lines.slice(1)
+    .filter(l => l.trim())
+    .map(line => {
+      const vals = line.split(sep).map(v => v.trim());
+      return Object.fromEntries(headers.map((h, i) => [h, vals[i] ?? ""]));
+    });
+}
+
+async function loadText(path) {
+  const res = await fetch(path);
+  if (!res.ok) throw new Error(`No se pudo cargar ${path} (${res.status})`);
+  return res.text();
+}
+
+// ─── EQUIPOS MAP ─────────────────────────────────────────────────────────────
+async function buildEquiposMap() {
+  const text = await loadText("./equipos.csv");
+  const rows = parseCSV(text);
+  const map = new Map();
+  for (const row of rows) {
+    const es   = row["ES"]?.toUpperCase().trim();
+    const abbr = row["ESPN_ABBR"]?.toUpperCase().trim();
+    if (es && abbr) map.set(es, abbr);
+  }
+  return map;
+}
+
+// ─── PREDICCIONES ────────────────────────────────────────────────────────────
+async function loadPredicciones(map) {
+  const text = await loadText("./predicciones.csv");
+  const rows = parseCSV(text);
+  const warned = new Set();
+
+  return rows.map(row => {
+    const e1 = row["EQUIPO 1"]?.toUpperCase().trim() ?? "";
+    const e2 = row["EQUIPO 2"]?.toUpperCase().trim() ?? "";
+    const abbr1 = map.get(e1) ?? null;
+    const abbr2 = map.get(e2) ?? null;
+
+    if (!abbr1 && e1 && !warned.has(e1)) {
+      console.warn(`⚠ Sin mapeo en equipos.csv: "${row["EQUIPO 1"]}"`);
+      warned.add(e1);
+    }
+    if (!abbr2 && e2 && !warned.has(e2)) {
+      console.warn(`⚠ Sin mapeo en equipos.csv: "${row["EQUIPO 2"]}"`);
+      warned.add(e2);
+    }
+
+    return {
+      jugador: row["JUGADOR"]?.trim() ?? "",
+      partido: row["PARTIDO"]?.trim() ?? "",
+      equipo1: row["EQUIPO 1"]?.trim() ?? "",
+      equipo2: row["EQUIPO 2"]?.trim() ?? "",
+      abbr1,
+      abbr2,
+      goles1: parseInt(row["GOLES 1"], 10),
+      goles2: parseInt(row["GOLES 2"], 10),
+    };
+  });
+}
+
+// ─── ESPN ─────────────────────────────────────────────────────────────────────
+async function fetchESPN() {
+  const res = await fetch(ESPN_URL);
+  if (!res.ok) throw new Error(`ESPN devolvió ${res.status}`);
+  const data = await res.json();
+  return parseESPN(data);
+}
+
+function parseESPN(data) {
+  return (data.events ?? []).map(event => {
+    const comp = event.competitions?.[0];
+    if (!comp) return null;
+
+    const statusType = comp.status?.type ?? {};
+    const period = comp.status?.period ?? event.status?.period ?? 0;
+    const home = comp.competitors?.find(c => c.homeAway === "home");
+    const away = comp.competitors?.find(c => c.homeAway === "away");
+
+    return {
+      id:          event.id,
+      date:        event.date,
+      name:        event.name,
+      homeAbbr:    home?.team?.abbreviation?.toUpperCase() ?? null,
+      awayAbbr:    away?.team?.abbreviation?.toUpperCase() ?? null,
+      homeDisplay: home?.team?.displayName ?? "",
+      awayDisplay: away?.team?.displayName ?? "",
+      homeScore:   home?.score != null ? parseInt(home.score, 10) : null,
+      awayScore:   away?.score != null ? parseInt(away.score, 10) : null,
+      state:       statusType.state ?? "pre",
+      completed:   statusType.completed ?? false,
+      statusDesc:  statusType.description ?? "",
+      period,
+      // period > 2 means the match went to extra time (3 = ET1, 4 = ET2, 5 = penalties).
+      // ESPN may include ET goals in the score, so flag it for the UI.
+      wentToET:    period > 2,
+      displayClock: comp.status?.displayClock ?? event.status?.displayClock ?? "",
+    };
+  }).filter(Boolean);
+}
+
+// ─── SCORING ──────────────────────────────────────────────────────────────────
+function calcPuntos(predG1, predG2, realG1, realG2) {
+  if (predG1 === realG1 && predG2 === realG2) return 3;
+  if (Math.sign(predG1 - predG2) === Math.sign(realG1 - realG2)) return 1;
+  return 0;
+}
+
+// Canonical key for a pair of abbreviations — order-independent
+function pairKey(a, b) {
+  return a < b ? `${a}|${b}` : `${b}|${a}`;
+}
+
+function scoreAll(preds, events) {
+  const byKey = new Map();
+  for (const ev of events) {
+    if (ev.homeAbbr && ev.awayAbbr) {
+      byKey.set(pairKey(ev.homeAbbr, ev.awayAbbr), ev);
+    }
+  }
+
+  return preds.map(pred => {
+    const base = { ...pred, puntos: null, estado: "pre", event: null, realG1: null, realG2: null };
+
+    if (!pred.abbr1 || !pred.abbr2) return { ...base, estado: "sin_mapeo" };
+
+    const ev = byKey.get(pairKey(pred.abbr1, pred.abbr2));
+    if (!ev) {
+      console.warn(`⚠ Partido no encontrado en ESPN: ${pred.abbr1} vs ${pred.abbr2} (${pred.equipo1} vs ${pred.equipo2})`);
+      return { ...base, estado: "no_encontrado" };
+    }
+
+    if (ev.state === "pre") return { ...base, event: ev };
+
+    // Map ESPN home/away scores back to pred equipo1/equipo2 ordering
+    const realG1 = ev.homeAbbr === pred.abbr1 ? ev.homeScore : ev.awayScore;
+    const realG2 = ev.homeAbbr === pred.abbr1 ? ev.awayScore : ev.homeScore;
+
+    if (realG1 === null || realG2 === null) {
+      return { ...base, estado: ev.state, event: ev };
+    }
+
+    return {
+      ...pred,
+      event:  ev,
+      estado: ev.state,
+      realG1,
+      realG2,
+      puntos: calcPuntos(pred.goles1, pred.goles2, realG1, realG2),
+    };
+  });
+}
+
+function buildRanking(scored) {
+  const map = new Map();
+  for (const s of scored) {
+    if (!map.has(s.jugador)) {
+      map.set(s.jugador, { jugador: s.jugador, total: 0, exactos: 0, resultados: 0, provisorio: false });
+    }
+    const j = map.get(s.jugador);
+    if (s.puntos !== null) {
+      if (s.estado === "in") j.provisorio = true;
+      j.total += s.puntos;
+      if (s.puntos === 3)      j.exactos++;
+      else if (s.puntos === 1) j.resultados++;
+    }
+  }
+  return [...map.values()].sort((a, b) =>
+    b.total - a.total || b.exactos - a.exactos || a.jugador.localeCompare(b.jugador)
+  );
+}
+
+function groupByMatch(scored) {
+  const groups = new Map();
+  for (const s of scored) {
+    const key = pairKey(s.abbr1 ?? s.equipo1, s.abbr2 ?? s.equipo2);
+    if (!groups.has(key)) {
+      groups.set(key, { key, equipo1: s.equipo1, equipo2: s.equipo2, event: s.event, preds: [] });
+    }
+    groups.get(key).preds.push(s);
+  }
+  return [...groups.values()].sort((a, b) => {
+    const da = a.event?.date ?? "9999";
+    const db = b.event?.date ?? "9999";
+    return da < db ? -1 : da > db ? 1 : 0;
+  });
+}
+
+// ─── RENDERING ───────────────────────────────────────────────────────────────
+function esc(s) {
+  return String(s ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
+function formatDate(iso) {
+  if (!iso) return "";
+  try {
+    return new Date(iso).toLocaleString("es-AR", {
+      day: "2-digit", month: "2-digit",
+      hour: "2-digit", minute: "2-digit",
+      timeZone: "America/Argentina/Buenos_Aires",
+    });
+  } catch { return iso; }
+}
+
+function badgeHTML(state) {
+  const labels = { pre: "PRÓXIMO", in: "EN VIVO", post: "FINAL" };
+  const label = labels[state] ?? state;
+  return `<span class="badge ${state}">${label}</span>`;
+}
+
+function ptsClass(pts, estado) {
+  if (pts === null) return estado === "pre" || estado === "no_encontrado" ? "pts-pending" : "pts-pending";
+  if (pts === 3) return "pts-3";
+  if (pts === 1) return "pts-1";
+  return "pts-0";
+}
+
+function renderRanking(ranking, hasLive) {
+  if (!ranking.length) return '<p class="empty">No hay datos aún.</p>';
+
+  let html = `<table class="ranking-table">
+    <thead><tr>
+      <th class="col-rank">#</th>
+      <th class="col-name">Jugador</th>
+      <th class="col-num" title="Marcador exacto = 3 pts">Exactos</th>
+      <th class="col-num" title="Resultado correcto = 1 pt">Result.</th>
+      <th class="col-total">Total</th>
+    </tr></thead><tbody>`;
+
+  let displayRank = 1;
+  for (let i = 0; i < ranking.length; i++) {
+    const r = ranking[i];
+    if (i > 0 && r.total < ranking[i - 1].total) displayRank = i + 1;
+    const prov = r.provisorio ? ' <span class="prov-mark" title="Puntos provisorios">*</span>' : "";
+    html += `<tr>
+      <td class="col-rank">${displayRank}</td>
+      <td class="col-name">${esc(r.jugador)}${prov}</td>
+      <td class="col-num">${r.exactos}</td>
+      <td class="col-num">${r.resultados}</td>
+      <td class="col-total">${r.total}${prov}</td>
+    </tr>`;
+  }
+  html += "</tbody></table>";
+  if (hasLive) html += '<p class="prov-note">* Incluye partidos en vivo — puntos provisorios.</p>';
+  return html;
+}
+
+function renderPartidos(groups) {
+  if (!groups.length) return '<p class="empty">No hay predicciones cargadas.</p>';
+
+  return groups.map(g => {
+    const ev    = g.event;
+    const state = ev?.state ?? "no_encontrado";
+
+    const displayHome = ev?.homeDisplay ?? g.equipo1;
+    const displayAway = ev?.awayDisplay ?? g.equipo2;
+
+    let resultHTML = "";
+    if ((state === "post" || state === "in") && ev.homeScore !== null) {
+      resultHTML = `<span class="match-result">${ev.homeScore} - ${ev.awayScore}</span>`;
+      if (ev.wentToET && MARCADOR_CUENTA === "reglamentario") {
+        resultHTML += ` <span class="et-warn" title="Fue a prórroga/penales. El score puede incluir goles de ET — verificar.">⚠ ET</span>`;
+      }
+    }
+
+    const predRows = g.preds.map(s => {
+      const cls     = ptsClass(s.puntos, s.estado);
+      const ptsText = s.puntos !== null
+        ? `${s.puntos} pt${s.puntos !== 1 ? "s" : ""}`
+        : (state === "pre" || state === "no_encontrado" ? "—" : "?");
+      const liveTag = s.estado === "in" ? ' <span class="prov-mark" title="En vivo">*</span>' : "";
+      return `<tr class="${cls}">
+        <td class="col-name">${esc(s.jugador)}</td>
+        <td class="pred-score">${s.goles1} - ${s.goles2}</td>
+        <td class="pred-pts">${ptsText}${liveTag}</td>
+      </tr>`;
+    }).join("");
+
+    return `<div class="match-card" data-state="${esc(state)}">
+      <div class="match-header">
+        <div class="match-teams">${esc(displayHome)} vs ${esc(displayAway)}</div>
+        <div class="match-meta">
+          ${badgeHTML(state)}
+          ${resultHTML}
+          ${state === "in" ? `<span class="live-clock">${esc(ev.displayClock)}</span>` : ""}
+          <span class="match-date">${formatDate(ev?.date)}</span>
+        </div>
+      </div>
+      <table class="pred-table"><tbody>${predRows}</tbody></table>
+    </div>`;
+  }).join("");
+}
+
+// ─── REFRESH / POLLING ────────────────────────────────────────────────────────
+async function refresh() {
+  hideError();
+  try {
+    const events  = await fetchESPN();
+    lastUpdated   = Date.now();
+    updateStatus();
+
+    const scored  = scoreAll(predicciones, events);
+    const ranking = buildRanking(scored);
+    const groups  = groupByMatch(scored);
+    const hasLive = events.some(ev => ev.state === "in");
+
+    document.getElementById("ranking-container").innerHTML  = renderRanking(ranking, hasLive);
+    document.getElementById("partidos-container").innerHTML = renderPartidos(groups);
+
+    // Manual refresh button only visible when nothing is live
+    document.getElementById("refresh-btn").style.display = hasLive ? "none" : "";
+
+    scheduleNext(hasLive);
+  } catch (err) {
+    console.error(err);
+    showError(err.message);
+    scheduleNext(false);
+  }
+}
+
+function scheduleNext(hasLive) {
+  clearTimeout(pollTimer);
+  pollTimer = setTimeout(refresh, hasLive ? POLL_LIVE_MS : POLL_IDLE_MS);
+}
+
+function updateStatus() {
+  const el = document.getElementById("last-updated");
+  if (!el || !lastUpdated) return;
+  const secs = Math.floor((Date.now() - lastUpdated) / 1000);
+  if (secs < 60)       el.textContent = `Actualizado hace ${secs}s`;
+  else if (secs < 3600) el.textContent = `Actualizado hace ${Math.floor(secs / 60)}min`;
+  else                  el.textContent = `Actualizado hace ${Math.floor(secs / 3600)}h`;
+}
+
+function showError(msg) {
+  const el = document.getElementById("error-banner");
+  if (el) { el.textContent = `Error: ${msg}`; el.style.display = "block"; }
+}
+function hideError() {
+  const el = document.getElementById("error-banner");
+  if (el) el.style.display = "none";
+}
+
+// ─── TABS ─────────────────────────────────────────────────────────────────────
+function initTabs() {
+  document.querySelectorAll(".tab").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+      document.querySelectorAll(".tab-panel").forEach(p => p.classList.remove("active"));
+      btn.classList.add("active");
+      document.getElementById(`tab-${btn.dataset.tab}`)?.classList.add("active");
+    });
+  });
+}
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+async function init() {
+  initTabs();
+
+  document.getElementById("refresh-btn").addEventListener("click", () => {
+    clearTimeout(pollTimer);
+    refresh();
+  });
+
+  // Keep "hace X" display fresh
+  setInterval(updateStatus, 30_000);
+
+  try {
+    equiposMap   = await buildEquiposMap();
+    predicciones = await loadPredicciones(equiposMap);
+  } catch (err) {
+    showError(err.message);
+    return;
+  }
+
+  await refresh();
+}
+
+document.addEventListener("DOMContentLoaded", init);
