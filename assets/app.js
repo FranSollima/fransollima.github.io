@@ -313,7 +313,17 @@ function renderPartidos(groups) {
       }
     }
 
-    const predRows = g.preds.map(s => {
+    // Sort: pts desc (null counts as -1), then display name alpha
+    const sortedPreds = [...g.preds].sort((a, b) => {
+      const pa = a.puntos ?? -1;
+      const pb = b.puntos ?? -1;
+      if (pb !== pa) return pb - pa;
+      const na = jugadoresMap?.get(a.jugador) ?? a.jugador;
+      const nb = jugadoresMap?.get(b.jugador) ?? b.jugador;
+      return na.localeCompare(nb, "es");
+    });
+
+    const predRows = sortedPreds.map(s => {
       const cls     = ptsClass(s.puntos, s.estado);
       const ptsText = s.puntos !== null
         ? `${s.puntos} pt${s.puntos !== 1 ? "s" : ""}`
@@ -327,8 +337,8 @@ function renderPartidos(groups) {
       </tr>`;
     }).join("");
 
-    return `<div class="match-card" data-state="${esc(state)}">
-      <div class="match-header">
+    return `<details class="match-card" data-state="${esc(state)}">
+      <summary class="match-header">
         <div class="match-teams">${esc(displayHome)} vs ${esc(displayAway)}</div>
         <div class="match-meta">
           ${badgeHTML(state)}
@@ -336,9 +346,9 @@ function renderPartidos(groups) {
           ${state === "in" ? `<span class="live-clock">${esc(ev.displayClock)}</span>` : ""}
           <span class="match-date">${formatDate(ev?.date)}</span>
         </div>
-      </div>
+      </summary>
       <table class="pred-table"><tbody>${predRows}</tbody></table>
-    </div>`;
+    </details>`;
   }).join("");
 }
 
