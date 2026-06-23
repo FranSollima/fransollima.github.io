@@ -14,9 +14,10 @@ const POLL_LIVE_MS = 45_000;   // 45 s — hay al menos un partido en vivo
 const POLL_IDLE_MS = 300_000;  // 5 min — no hay partidos en vivo
 
 // ─── STATE ───────────────────────────────────────────────────────────────────
-let pollTimer   = null;
-let lastUpdated = null;
-let equiposMap  = null;
+let pollTimer    = null;
+let lastUpdated  = null;
+let equiposMap   = null;
+let jugadoresMap = null;
 let predicciones = null;
 
 // ─── CSV PARSER ──────────────────────────────────────────────────────────────
@@ -36,6 +37,19 @@ async function loadText(path) {
   const res = await fetch(path);
   if (!res.ok) throw new Error(`No se pudo cargar ${path} (${res.status})`);
   return res.text();
+}
+
+// ─── JUGADORES MAP ───────────────────────────────────────────────────────────
+async function loadJugadores() {
+  const text = await loadText("./jugadores.csv");
+  const rows = parseCSV(text);
+  const map = new Map();
+  for (const row of rows) {
+    const codigo = row["CODIGO"]?.trim();
+    const nombre = row["NOMBRE"]?.trim();
+    if (codigo && nombre) map.set(codigo, nombre);
+  }
+  return map;
 }
 
 // ─── EQUIPOS MAP ─────────────────────────────────────────────────────────────
@@ -181,19 +195,21 @@ function buildRanking(scored) {
   const map = new Map();
   for (const s of scored) {
     if (!map.has(s.jugador)) {
-      map.set(s.jugador, { jugador: s.jugador, total: 0, exactos: 0, resultados: 0, provisorio: false });
+      map.set(s.jugador, { jugador: s.jugador, ptsPost: 0, ptsLive: 0, exactos: 0, resultados: 0 });
     }
     const j = map.get(s.jugador);
     if (s.puntos !== null) {
-      if (s.estado === "in") j.provisorio = true;
-      j.total += s.puntos;
+      if (s.estado === "in") j.ptsLive += s.puntos;
+      else                   j.ptsPost += s.puntos;
       if (s.puntos === 3)      j.exactos++;
       else if (s.puntos === 1) j.resultados++;
     }
   }
-  return [...map.values()].sort((a, b) =>
-    b.total - a.total || b.exactos - a.exactos || a.jugador.localeCompare(b.jugador)
-  );
+  return [...map.values()].sort((a, b) => {
+    const ta = a.ptsPost + a.ptsLive;
+    const tb = b.ptsPost + b.ptsLive;
+    return tb - ta || b.exactos - a.exactos || a.jugador.localeCompare(b.jugador);
+  });
 }
 
 function groupByMatch(scored) {
@@ -244,7 +260,7 @@ function ptsClass(pts, estado) {
   return "pts-0";
 }
 
-function renderRanking(ranking, hasLive) {
+function renderRanking(ranking, hasLive, jugMap) {
   if (!ranking.length) return '<p class="empty">No hay datos aún.</p>';
 
   let html = `<table class="ranking-table">
@@ -259,18 +275,23 @@ function renderRanking(ranking, hasLive) {
   let displayRank = 1;
   for (let i = 0; i < ranking.length; i++) {
     const r = ranking[i];
-    if (i > 0 && r.total < ranking[i - 1].total) displayRank = i + 1;
-    const prov = r.provisorio ? ' <span class="prov-mark" title="Puntos provisorios">*</span>' : "";
+    const total = r.ptsPost + r.ptsLive;
+    const prevTotal = i > 0 ? ranking[i - 1].ptsPost + ranking[i - 1].ptsLive : null;
+    if (i > 0 && total < prevTotal) displayRank = i + 1;
+    const nombre = jugMap?.get(r.jugador) ?? r.jugador;
+    const totalHTML = r.ptsLive > 0
+      ? `${r.ptsPost} <span class="pts-live">(+${r.ptsLive})</span>`
+      : `${r.ptsPost}`;
     html += `<tr>
       <td class="col-rank">${displayRank}</td>
-      <td class="col-name">${esc(r.jugador)}${prov}</td>
+      <td class="col-name">${esc(nombre)}</td>
       <td class="col-num">${r.exactos}</td>
       <td class="col-num">${r.resultados}</td>
-      <td class="col-total">${r.total}${prov}</td>
+      <td class="col-total">${totalHTML}</td>
     </tr>`;
   }
   html += "</tbody></table>";
-  if (hasLive) html += '<p class="prov-note">* Incluye partidos en vivo — puntos provisorios.</p>';
+  if (hasLive) html += '<p class="prov-note">Los puntos entre paréntesis son provisorios (partido en vivo).</p>';
   return html;
 }
 
@@ -298,8 +319,9 @@ function renderPartidos(groups) {
         ? `${s.puntos} pt${s.puntos !== 1 ? "s" : ""}`
         : (state === "pre" || state === "no_encontrado" ? "—" : "?");
       const liveTag = s.estado === "in" ? ' <span class="prov-mark" title="En vivo">*</span>' : "";
+      const nombre  = jugadoresMap?.get(s.jugador) ?? s.jugador;
       return `<tr class="${cls}">
-        <td class="col-name">${esc(s.jugador)}</td>
+        <td class="col-name">${esc(nombre)}</td>
         <td class="pred-score">${s.goles1} - ${s.goles2}</td>
         <td class="pred-pts">${ptsText}${liveTag}</td>
       </tr>`;
@@ -333,7 +355,7 @@ async function refresh() {
     const groups  = groupByMatch(scored);
     const hasLive = events.some(ev => ev.state === "in");
 
-    document.getElementById("ranking-container").innerHTML  = renderRanking(ranking, hasLive);
+    document.getElementById("ranking-container").innerHTML  = renderRanking(ranking, hasLive, jugadoresMap);
     document.getElementById("partidos-container").innerHTML = renderPartidos(groups);
 
     // Manual refresh button only visible when nothing is live
@@ -396,6 +418,7 @@ async function init() {
 
   try {
     equiposMap   = await buildEquiposMap();
+    jugadoresMap = await loadJugadores();
     predicciones = await loadPredicciones(equiposMap);
   } catch (err) {
     showError(err.message);

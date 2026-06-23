@@ -124,6 +124,7 @@ header h1 { font-size: 1rem; font-weight: 700; }
 
 .prov-mark { color: var(--c-pts1); font-size: 0.75em; margin-left: 2px; }
 .prov-note { font-size: 0.72rem; color: var(--c-pts1); padding: 0.4rem 0.75rem; }
+.pts-live  { color: var(--c-pts1); font-size: 0.82em; font-weight: 400; }
 
 /* ── Match cards ────────────────────────────────────────── */
 #partidos-container { padding: 0.5rem; display: flex; flex-direction: column; gap: 0.6rem; }
