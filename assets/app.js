@@ -222,6 +222,9 @@ function groupByMatch(scored) {
     groups.get(key).preds.push(s);
   }
   return [...groups.values()].sort((a, b) => {
+    const inA = a.event?.state === "in" ? 0 : 1;
+    const inB = b.event?.state === "in" ? 0 : 1;
+    if (inA !== inB) return inA - inB;
     const da = a.event?.date ?? "9999";
     const db = b.event?.date ?? "9999";
     return da < db ? -1 : da > db ? 1 : 0;
@@ -337,7 +340,7 @@ function renderPartidos(groups) {
       </tr>`;
     }).join("");
 
-    return `<details class="match-card" data-state="${esc(state)}">
+    return `<details class="match-card" data-state="${esc(state)}"${state === "in" ? " open" : ""}>
       <summary class="match-header">
         <div class="match-teams">${esc(displayHome)} vs ${esc(displayAway)}</div>
         <div class="match-meta">
