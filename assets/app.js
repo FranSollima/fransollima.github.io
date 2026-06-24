@@ -429,7 +429,6 @@ function renderRanking(ranking, hasLive, jugMap) {
     </tr>`;
   }
   html += "</tbody></table>";
-  if (hasLive) html += '<p class="prov-note">Los puntos entre paréntesis son provisorios (partido en vivo).</p>';
   return html;
 }
 
