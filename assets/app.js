@@ -11,7 +11,7 @@ const ESPN_URL =
   "?limit=200&dates=20260611-20260719";
 
 const POLL_LIVE_MS = 10_000;   // 10 s — hay al menos un partido en vivo
-const POLL_IDLE_MS = 300_000;  // 5 min — no hay partidos en vivo
+const POLL_IDLE_MS = 60_000;   // 1 min — no hay partidos en vivo
 
 // ─── STATE ───────────────────────────────────────────────────────────────────
 let pollTimer    = null;
@@ -488,8 +488,6 @@ async function refresh() {
     document.getElementById("ranking-container").innerHTML  = renderRanking(ranking, hasLive, jugadoresMap);
     document.getElementById("partidos-container").innerHTML = renderPartidos(groups);
 
-    // Manual refresh button only visible when nothing is live
-    document.getElementById("refresh-btn").style.display = hasLive ? "none" : "";
 
     scheduleNext(hasLive);
   } catch (err) {
@@ -529,12 +527,7 @@ function initTabs() {
 async function init() {
   initTabs();
 
-  document.getElementById("refresh-btn").addEventListener("click", () => {
-    clearTimeout(pollTimer);
-    refresh();
-  });
-
-try {
+  try {
     equiposMap   = await buildEquiposMap();
     jugadoresMap = await loadJugadores();
     predicciones = await loadPredicciones(equiposMap);

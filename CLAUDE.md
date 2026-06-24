@@ -52,7 +52,7 @@ GET https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard?l
 ```js
 const MARCADOR_CUENTA = "reglamentario"; // "reglamentario" | "final"
 const POLL_LIVE_MS = 10_000;   // refresco con partido en vivo
-const POLL_IDLE_MS = 300_000;  // refresco sin partidos en vivo
+const POLL_IDLE_MS = 60_000;   // refresco sin partidos en vivo
 ```
 
 ### Matching equipo predicción ↔ evento ESPN
