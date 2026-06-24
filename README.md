@@ -4,7 +4,7 @@ App estática para seguir un prode del Mundial 2026 en tiempo real. Vive en GitH
 
 ## Cómo funciona
 
-- Los resultados de los partidos los levanta automáticamente de ESPN cada 45 segundos cuando hay un partido en vivo, o cada 5 minutos cuando no hay ninguno.
+- Los resultados de los partidos los levanta automáticamente de ESPN cada 10 segundos cuando hay un partido en vivo, o cada minuto cuando no hay ninguno.
 - Las predicciones de cada jugador están en `predicciones.csv`.
 - El puntaje se calcula en el browser: 3 puntos por marcador exacto, 1 punto por resultado correcto (ganador/empate), 0 si erró.
 - **Los partidos de eliminatoria se puntúan a los 90 minutos reglamentarios**, sin contar prórroga ni penales.
@@ -51,6 +51,12 @@ DM;Dani
 ## Ranking
 
 La tabla principal muestra puntos confirmados. Si hay un partido en vivo que afecta los puntos de alguien, aparece el formato `44 (+1)`: el número base son los puntos ya cerrados, el `(+X)` en naranja es provisorio y se ajusta con el resultado final.
+
+En caso de empate en puntos, el desempate es: más marcadores exactos → nombre alfabético.
+
+## Probabilidades en vivo
+
+Cuando hay un partido en curso, cada card de partido muestra una barra con las probabilidades estimadas de victoria local, empate y victoria visitante. Si ESPN tiene odds de casas de apuesta disponibles, los usa; si no, calcula las probabilidades con un modelo Poisson basado en los tiros al arco del partido.
 
 ## Deploy
 

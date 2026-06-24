@@ -11,13 +11,14 @@ const ESPN_URL =
   "?limit=200&dates=20260611-20260719";
 
 const POLL_LIVE_MS = 10_000;   // 10 s — hay al menos un partido en vivo
-const POLL_IDLE_MS = 300_000;  // 5 min — no hay partidos en vivo
+const POLL_IDLE_MS = 60_000;   // 1 min — no hay partidos en vivo
 
 // ─── STATE ───────────────────────────────────────────────────────────────────
 let pollTimer    = null;
 let equiposMap   = null;
 let jugadoresMap = null;
 let predicciones = null;
+const probsCache = new Map(); // ev.id → last valid { pWin, pDraw, pLose, source }
 
 // ─── CSV PARSER ──────────────────────────────────────────────────────────────
 function parseCSV(text, sep = ";") {
@@ -100,10 +101,16 @@ async function loadPredicciones(map) {
 
 // ─── ESPN ─────────────────────────────────────────────────────────────────────
 async function fetchESPN() {
-  const res = await fetch(ESPN_URL, { cache: "no-store" });
-  if (!res.ok) throw new Error(`ESPN devolvió ${res.status}`);
-  const data = await res.json();
-  return parseESPN(data);
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 15_000);
+  try {
+    const res = await fetch(ESPN_URL, { cache: "no-store", signal: ctrl.signal });
+    if (!res.ok) throw new Error(`ESPN devolvió ${res.status}`);
+    const data = await res.json();
+    return parseESPN(data);
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 function getStat(competitor, name) {
@@ -131,7 +138,7 @@ function parseESPN(data) {
       awayDisplay: away?.team?.displayName ?? "",
       homeScore:   home?.score != null ? parseInt(home.score, 10) : null,
       awayScore:   away?.score != null ? parseInt(away.score, 10) : null,
-      state:       statusType.state ?? "pre",
+      state:       statusType.completed ? "post" : (statusType.state ?? "pre"),
       completed:   statusType.completed ?? false,
       statusDesc:  statusType.description ?? "",
       statusName:  statusType.name ?? "",
@@ -240,7 +247,8 @@ function calcMatchProbs(ev) {
       away: americanToProb(ev.odds.away),
     };
     const total = raw.home + raw.draw + raw.away;
-    return { pWin: raw.home / total, pDraw: raw.draw / total, pLose: raw.away / total, source: "odds" };
+    const r = { pWin: raw.home / total, pDraw: raw.draw / total, pLose: raw.away / total, source: "odds" };
+    return isValidProbs(r) ? r : null;
   }
 
   // Fallback: Poisson model from shots on target
@@ -265,11 +273,18 @@ function calcMatchProbs(ev) {
       else              pLose += p;
     }
   }
-  return { pWin, pDraw, pLose, source: "poisson" };
+  const r = { pWin, pDraw, pLose, source: "poisson" };
+  return isValidProbs(r) ? r : null;
+}
+
+function isValidProbs({ pWin, pDraw, pLose }) {
+  return isFinite(pWin) && isFinite(pDraw) && isFinite(pLose);
 }
 
 function renderLiveStats(ev) {
-  const probs = calcMatchProbs(ev);
+  const fresh = calcMatchProbs(ev);
+  if (fresh) probsCache.set(ev.id, fresh);
+  const probs = fresh ?? probsCache.get(ev.id);
   if (!probs) return "";
   const { pWin, pDraw, pLose } = probs;
   const ph = Math.round(pWin  * 100);
@@ -488,8 +503,6 @@ async function refresh() {
     document.getElementById("ranking-container").innerHTML  = renderRanking(ranking, hasLive, jugadoresMap);
     document.getElementById("partidos-container").innerHTML = renderPartidos(groups);
 
-    // Manual refresh button only visible when nothing is live
-    document.getElementById("refresh-btn").style.display = hasLive ? "none" : "";
 
     scheduleNext(hasLive);
   } catch (err) {
@@ -529,12 +542,7 @@ function initTabs() {
 async function init() {
   initTabs();
 
-  document.getElementById("refresh-btn").addEventListener("click", () => {
-    clearTimeout(pollTimer);
-    refresh();
-  });
-
-try {
+  try {
     equiposMap   = await buildEquiposMap();
     jugadoresMap = await loadJugadores();
     predicciones = await loadPredicciones(equiposMap);
