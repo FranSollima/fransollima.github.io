@@ -100,10 +100,16 @@ async function loadPredicciones(map) {
 
 // ─── ESPN ─────────────────────────────────────────────────────────────────────
 async function fetchESPN() {
-  const res = await fetch(ESPN_URL, { cache: "no-store" });
-  if (!res.ok) throw new Error(`ESPN devolvió ${res.status}`);
-  const data = await res.json();
-  return parseESPN(data);
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 15_000);
+  try {
+    const res = await fetch(ESPN_URL, { cache: "no-store", signal: ctrl.signal });
+    if (!res.ok) throw new Error(`ESPN devolvió ${res.status}`);
+    const data = await res.json();
+    return parseESPN(data);
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 function getStat(competitor, name) {
@@ -131,7 +137,7 @@ function parseESPN(data) {
       awayDisplay: away?.team?.displayName ?? "",
       homeScore:   home?.score != null ? parseInt(home.score, 10) : null,
       awayScore:   away?.score != null ? parseInt(away.score, 10) : null,
-      state:       statusType.state ?? "pre",
+      state:       statusType.completed ? "post" : (statusType.state ?? "pre"),
       completed:   statusType.completed ?? false,
       statusDesc:  statusType.description ?? "",
       statusName:  statusType.name ?? "",
