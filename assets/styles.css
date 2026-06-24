@@ -13,10 +13,7 @@
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
-html { background: var(--c-bg); }
-
-body {
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+html {
   background-color: var(--c-bg);
   background-image: repeating-linear-gradient(
     180deg,
@@ -29,10 +26,15 @@ body {
     rgba(201,168,  76, 0.8) 120px,
     rgba(201,168,  76, 0.8) 160px
   );
+  min-height: 100%;
+}
+
+body {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  background: transparent;
   color: #1a1f36;
   max-width: 640px;
   margin: 0 auto;
-  min-height: 100vh;
   padding-bottom: 2rem;
 }
 
@@ -323,9 +325,16 @@ details[open].match-card > summary::after { content: "▴"; }
 .app-footer {
   text-align: center;
   padding: 0.5rem 1rem 1.5rem;
+}
+
+.version {
+  display: inline-block;
+  background: rgba(255,255,255,0.65);
+  color: #555;
   font-size: 0.68rem;
-  color: #c8ccd6;
   letter-spacing: 0.04em;
+  padding: 0.15rem 0.55rem;
+  border-radius: 99px;
 }
 
 .wc-logo {
