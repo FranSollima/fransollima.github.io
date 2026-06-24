@@ -58,6 +58,10 @@ En caso de empate en puntos, el desempate es: más marcadores exactos → nombre
 
 Cuando hay un partido en curso, cada card de partido muestra una barra con las probabilidades estimadas de victoria local, empate y victoria visitante. Si ESPN tiene odds de casas de apuesta disponibles, los usa; si no, calcula las probabilidades con un modelo Poisson basado en los tiros al arco del partido.
 
+## Versión
+
+Cada `index.html` tiene un `<footer class="app-footer">` con el número de versión (ej. `v1.0.0`). Al mergear cambios a `main`, actualizar ese número manualmente siguiendo semver: incrementar el último dígito para cambios menores, el del medio para features nuevas.
+
 ## Deploy
 
 Se publica automáticamente en GitHub Pages con cada push a `main`. No hay build step.

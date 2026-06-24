@@ -349,7 +349,14 @@ function groupByMatch(scored) {
     }
     groups.get(key).preds.push(s);
   }
+  const todayAR = new Date().toLocaleDateString("en-CA", { timeZone: "America/Argentina/Buenos_Aires" });
+  const pastDay = ev => ev?.date
+    ? new Date(ev.date).toLocaleDateString("en-CA", { timeZone: "America/Argentina/Buenos_Aires" }) < todayAR ? 1 : 0
+    : 0;
+
   return [...groups.values()].sort((a, b) => {
+    const pa = pastDay(a.event), pb = pastDay(b.event);
+    if (pa !== pb) return pa - pb;
     const inA = a.event?.state === "in" ? 0 : 1;
     const inB = b.event?.state === "in" ? 0 : 1;
     if (inA !== inB) return inA - inB;
