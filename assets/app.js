@@ -140,6 +140,14 @@ function parseESPN(data) {
       displayClock:      comp.status?.displayClock ?? event.status?.displayClock ?? "",
       homeShotsOnTarget: getStat(home, "shotsOnTarget"),
       awayShotsOnTarget: getStat(away, "shotsOnTarget"),
+      odds: (() => {
+        const ml = comp.odds?.[0]?.moneyline;
+        if (!ml) return null;
+        const h = ml.home?.current?.odds;
+        const d = ml.draw?.current?.odds;
+        const a = ml.away?.current?.odds;
+        return h && d && a ? { home: h, draw: d, away: a } : null;
+      })(),
     };
   }).filter(Boolean);
 }
@@ -216,24 +224,36 @@ function poisson(lambda, k) {
   return p;
 }
 
+function americanToProb(str) {
+  const n = parseInt(str, 10);
+  return n > 0 ? 100 / (n + 100) : -n / (-n + 100);
+}
+
 function calcMatchProbs(ev) {
   if (ev.wentToET) return null;
+
+  // Use live bookmaker odds when available (DraftKings via ESPN)
+  if (ev.odds) {
+    const raw = {
+      home: americanToProb(ev.odds.home),
+      draw: americanToProb(ev.odds.draw),
+      away: americanToProb(ev.odds.away),
+    };
+    const total = raw.home + raw.draw + raw.away;
+    return { pWin: raw.home / total, pDraw: raw.draw / total, pLose: raw.away / total, source: "odds" };
+  }
+
+  // Fallback: Poisson model from shots on target
   const isHalfTime = ev.statusName === "STATUS_HALFTIME";
   const minPlayed  = parseMinute(ev.displayClock, isHalfTime);
   const minLeft    = isHalfTime ? 45 : Math.max(0, 90 - minPlayed);
-
   const xgHome = (ev.homeShotsOnTarget ?? 0) * XG_PER_SOT;
   const xgAway = (ev.awayShotsOnTarget ?? 0) * XG_PER_SOT;
-
-  // Blending observed rate with prior: early in the match, el prior domina;
-  // después de 30' los datos observados tienen peso total.
   const w        = Math.min(minPlayed / 30, 1);
   const rateHome = w * (xgHome / Math.max(minPlayed, 1)) + (1 - w) * PRIOR_RATE;
   const rateAway = w * (xgAway / Math.max(minPlayed, 1)) + (1 - w) * PRIOR_RATE;
-
   const lambdaHome = rateHome * minLeft;
   const lambdaAway = rateAway * minLeft;
-
   const hs = ev.homeScore ?? 0, as_ = ev.awayScore ?? 0;
   let pWin = 0, pDraw = 0, pLose = 0;
   for (let a = 0; a <= 8; a++) {
@@ -245,7 +265,7 @@ function calcMatchProbs(ev) {
       else              pLose += p;
     }
   }
-  return { pWin, pDraw, pLose };
+  return { pWin, pDraw, pLose, source: "poisson" };
 }
 
 function renderLiveStats(ev) {
@@ -255,8 +275,8 @@ function renderLiveStats(ev) {
   const ph = Math.round(pWin  * 100);
   const pd = Math.round(pDraw * 100);
   const pa = Math.round(pLose * 100);
-  const xgHome = ((ev.homeShotsOnTarget ?? 0) * XG_PER_SOT).toFixed(2);
-  const xgAway = ((ev.awayShotsOnTarget ?? 0) * XG_PER_SOT).toFixed(2);
+  const xgHome = ((ev.homeShotsOnTarget ?? 0) * XG_PER_SOT).toFixed(1);
+  const xgAway = ((ev.awayShotsOnTarget ?? 0) * XG_PER_SOT).toFixed(1);
   const home = esc(ev.homeAbbr ?? "Local");
   const away = esc(ev.awayAbbr ?? "Visit.");
 
@@ -273,8 +293,9 @@ function renderLiveStats(ev) {
       <div class="prob-seg prob-lose" style="flex:${pLose.toFixed(4)}"></div>
     </div>
     <div class="prob-3col prob-xg-row">
-      <span>${xgHome}</span><span>xG</span><span>${xgAway}</span>
+      <span>${xgHome}</span><span>Est. xG</span><span>${xgAway}</span>
     </div>
+    <div class="prob-source">${probs.source === "odds" ? "DraftKings · en vivo" : "Poisson · tiros al arco"}</div>
   </div>`;
 }
 
