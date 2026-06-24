@@ -100,7 +100,7 @@ async function loadPredicciones(map) {
 
 // ─── ESPN ─────────────────────────────────────────────────────────────────────
 async function fetchESPN() {
-  const res = await fetch(ESPN_URL);
+  const res = await fetch(ESPN_URL, { cache: "no-store" });
   if (!res.ok) throw new Error(`ESPN devolvió ${res.status}`);
   const data = await res.json();
   return parseESPN(data);
