@@ -212,64 +212,65 @@ details[open].match-card > summary::after {
 
 /* ── Live probability bars ──────────────────────────────── */
 .live-stats {
-  padding: 0.5rem 0.75rem 0.4rem;
+  padding: 0.55rem 0.75rem 0.5rem;
   background: #fafafa;
   border-bottom: 1px solid var(--c-border);
 }
 
-.prob-title {
-  font-size: 0.65rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: #9e9e9e;
-  margin-bottom: 0.35rem;
-}
-
-.prob-row {
+.prob-3col {
   display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 0.22rem;
+  justify-content: space-between;
+  align-items: baseline;
+}
+.prob-3col span:first-child { text-align: left; }
+.prob-3col span:nth-child(2) { text-align: center; flex: 1; }
+.prob-3col span:last-child  { text-align: right; }
+
+.prob-names span {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #212121;
+}
+.prob-names span:nth-child(2) {
+  font-weight: 400;
+  color: #757575;
 }
 
-.prob-team {
-  font-size: 0.72rem;
-  font-weight: 600;
-  width: 3.8rem;
-  color: #424242;
-  white-space: nowrap;
+.prob-pcts span {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--c-primary);
+}
+.prob-pcts span:nth-child(2) {
+  font-size: 0.78rem;
+  font-weight: 400;
+  color: #9e9e9e;
 }
 
-.prob-bar-track {
-  flex: 1;
-  height: 5px;
-  background: #e0e0e0;
+.prob-bar-3 {
+  display: flex;
+  height: 6px;
   border-radius: 3px;
   overflow: hidden;
+  gap: 2px;
+  margin: 0.35rem 0 0.3rem;
+  background: #e0e0e0;
 }
 
-.prob-bar-fill {
-  height: 100%;
-  border-radius: 3px;
-  transition: width 0.6s ease;
-}
-
+.prob-seg { height: 100%; transition: flex 0.6s ease; }
 .prob-win  { background: var(--c-pts3); }
-.prob-draw { background: #9e9e9e; }
+.prob-draw { background: #bdbdbd; }
 .prob-lose { background: var(--c-live); }
 
-.prob-pct {
-  font-size: 0.72rem;
-  font-weight: 600;
-  width: 2.2rem;
-  text-align: right;
-  color: #424242;
+.prob-xg-row span {
+  font-size: 0.7rem;
+  color: #9e9e9e;
 }
-
-.prob-note {
+.prob-xg-row span:nth-child(2) {
   font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
   color: #bdbdbd;
-  margin-top: 0.3rem;
 }
 
 /* ── Predictions grid inside each card ─────────────────── */

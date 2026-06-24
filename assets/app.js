@@ -255,18 +255,26 @@ function renderLiveStats(ev) {
   const ph = Math.round(pWin  * 100);
   const pd = Math.round(pDraw * 100);
   const pa = Math.round(pLose * 100);
-  const bar = (label, pct, cls) =>
-    `<div class="prob-row">
-      <span class="prob-team">${esc(label)}</span>
-      <div class="prob-bar-track"><div class="prob-bar-fill ${cls}" style="width:${pct}%"></div></div>
-      <span class="prob-pct">${pct}%</span>
-    </div>`;
+  const xgHome = ((ev.homeShotsOnTarget ?? 0) * XG_PER_SOT).toFixed(2);
+  const xgAway = ((ev.awayShotsOnTarget ?? 0) * XG_PER_SOT).toFixed(2);
+  const home = esc(ev.homeAbbr ?? "Local");
+  const away = esc(ev.awayAbbr ?? "Visit.");
+
   return `<div class="live-stats">
-    <div class="prob-title">Probabilidad de resultado</div>
-    ${bar(ev.homeAbbr ?? "Local",     ph, "prob-win")}
-    ${bar("Empate",                    pd, "prob-draw")}
-    ${bar(ev.awayAbbr ?? "Visitante", pa, "prob-lose")}
-    <div class="prob-note">xG × tiros al arco · Poisson · estimación</div>
+    <div class="prob-3col prob-names">
+      <span>${home}</span><span>Empate</span><span>${away}</span>
+    </div>
+    <div class="prob-3col prob-pcts">
+      <span>${ph}%</span><span>${pd}%</span><span>${pa}%</span>
+    </div>
+    <div class="prob-bar-3">
+      <div class="prob-seg prob-win"  style="flex:${pWin.toFixed(4)}"></div>
+      <div class="prob-seg prob-draw" style="flex:${pDraw.toFixed(4)}"></div>
+      <div class="prob-seg prob-lose" style="flex:${pLose.toFixed(4)}"></div>
+    </div>
+    <div class="prob-3col prob-xg-row">
+      <span>${xgHome}</span><span>xG</span><span>${xgAway}</span>
+    </div>
   </div>`;
 }
 
