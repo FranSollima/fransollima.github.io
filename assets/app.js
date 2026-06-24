@@ -10,12 +10,11 @@ const ESPN_URL =
   "https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard" +
   "?limit=200&dates=20260611-20260719";
 
-const POLL_LIVE_MS = 45_000;   // 45 s — hay al menos un partido en vivo
+const POLL_LIVE_MS = 10_000;   // 10 s — hay al menos un partido en vivo
 const POLL_IDLE_MS = 300_000;  // 5 min — no hay partidos en vivo
 
 // ─── STATE ───────────────────────────────────────────────────────────────────
 let pollTimer    = null;
-let lastUpdated  = null;
 let equiposMap   = null;
 let jugadoresMap = null;
 let predicciones = null;
@@ -360,6 +359,7 @@ function renderPartidos(groups) {
           ${state === "in" ? `<span class="live-clock">${ev.statusDesc?.toLowerCase().includes("half") ? "Entretiempo" : esc(ev.displayClock)}</span>` : ""}
           <span class="match-date">${formatDate(ev?.date)}</span>
         </div>
+        ${state === "in" ? '<div class="live-scan-bar"></div>' : ""}
       </summary>
       <table class="pred-table"><tbody>${predRows}</tbody></table>
     </details>`;
@@ -371,9 +371,6 @@ async function refresh() {
   hideError();
   try {
     const events  = await fetchESPN();
-    lastUpdated   = Date.now();
-    updateStatus();
-
     const scored  = scoreAll(predicciones, events);
     const ranking = buildRanking(scored);
     const groups  = groupByMatch(scored);
@@ -396,15 +393,6 @@ async function refresh() {
 function scheduleNext(hasLive) {
   clearTimeout(pollTimer);
   pollTimer = setTimeout(refresh, hasLive ? POLL_LIVE_MS : POLL_IDLE_MS);
-}
-
-function updateStatus() {
-  const el = document.getElementById("last-updated");
-  if (!el || !lastUpdated) return;
-  const secs = Math.floor((Date.now() - lastUpdated) / 1000);
-  if (secs < 60)       el.textContent = `Actualizado hace ${secs}s`;
-  else if (secs < 3600) el.textContent = `Actualizado hace ${Math.floor(secs / 60)}min`;
-  else                  el.textContent = `Actualizado hace ${Math.floor(secs / 3600)}h`;
 }
 
 function showError(msg) {
@@ -437,10 +425,7 @@ async function init() {
     refresh();
   });
 
-  // Keep "hace X" display fresh
-  setInterval(updateStatus, 30_000);
-
-  try {
+try {
     equiposMap   = await buildEquiposMap();
     jugadoresMap = await loadJugadores();
     predicciones = await loadPredicciones(equiposMap);

@@ -188,6 +188,28 @@ details[open].match-card > summary::after {
 
 .et-warn { color: var(--c-pts1); font-size: 0.8em; cursor: help; }
 
+@keyframes scan {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(400%); }
+}
+
+.live-scan-bar {
+  height: 2px;
+  background: #e0e0e0;
+  overflow: hidden;
+  margin-top: 0.4rem;
+  border-radius: 1px;
+}
+
+.live-scan-bar::after {
+  content: "";
+  display: block;
+  height: 100%;
+  width: 25%;
+  background: linear-gradient(90deg, transparent, #4caf50, #a5d6a7, transparent);
+  animation: scan 1.6s ease-in-out infinite;
+}
+
 /* ── Predictions grid inside each card ─────────────────── */
 .pred-table { width: 100%; border-collapse: collapse; }
 
