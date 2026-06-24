@@ -20,18 +20,19 @@ body {
   background-color: var(--c-bg);
   background-image: repeating-linear-gradient(
     180deg,
-    rgba(0,  40, 104, 0.07)   0px,
-    rgba(0,  40, 104, 0.07)  80px,
-    rgba(191, 10,  48, 0.07)  80px,
-    rgba(191, 10,  48, 0.07) 160px,
-    rgba(0,  104,  71, 0.07) 160px,
-    rgba(0,  104,  71, 0.07) 240px,
-    rgba(201,168,  76, 0.07) 240px,
-    rgba(201,168,  76, 0.07) 320px
+    rgba(0,  40, 104, 0.13)   0px,
+    rgba(0,  40, 104, 0.13)  40px,
+    rgba(191, 10,  48, 0.13)  40px,
+    rgba(191, 10,  48, 0.13)  80px,
+    rgba(0,  104,  71, 0.13)  80px,
+    rgba(0,  104,  71, 0.13) 120px,
+    rgba(201,168,  76, 0.13) 120px,
+    rgba(201,168,  76, 0.13) 160px
   );
   color: #1a1f36;
   max-width: 640px;
   margin: 0 auto;
+  min-height: 100vh;
   padding-bottom: 2rem;
 }
 
