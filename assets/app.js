@@ -18,6 +18,7 @@ let pollTimer    = null;
 let equiposMap   = null;
 let jugadoresMap = null;
 let predicciones = null;
+const probsCache = new Map(); // ev.id → last valid { pWin, pDraw, pLose, source }
 
 // ─── CSV PARSER ──────────────────────────────────────────────────────────────
 function parseCSV(text, sep = ";") {
@@ -246,7 +247,8 @@ function calcMatchProbs(ev) {
       away: americanToProb(ev.odds.away),
     };
     const total = raw.home + raw.draw + raw.away;
-    return { pWin: raw.home / total, pDraw: raw.draw / total, pLose: raw.away / total, source: "odds" };
+    const r = { pWin: raw.home / total, pDraw: raw.draw / total, pLose: raw.away / total, source: "odds" };
+    return isValidProbs(r) ? r : null;
   }
 
   // Fallback: Poisson model from shots on target
@@ -271,11 +273,18 @@ function calcMatchProbs(ev) {
       else              pLose += p;
     }
   }
-  return { pWin, pDraw, pLose, source: "poisson" };
+  const r = { pWin, pDraw, pLose, source: "poisson" };
+  return isValidProbs(r) ? r : null;
+}
+
+function isValidProbs({ pWin, pDraw, pLose }) {
+  return isFinite(pWin) && isFinite(pDraw) && isFinite(pLose);
 }
 
 function renderLiveStats(ev) {
-  const probs = calcMatchProbs(ev);
+  const fresh = calcMatchProbs(ev);
+  if (fresh) probsCache.set(ev.id, fresh);
+  const probs = fresh ?? probsCache.get(ev.id);
   if (!probs) return "";
   const { pWin, pDraw, pLose } = probs;
   const ph = Math.round(pWin  * 100);
