@@ -1,12 +1,14 @@
 :root {
-  --c-bg: #f5f5f5;
-  --c-card: #ffffff;
-  --c-border: #e0e0e0;
-  --c-primary: #1a237e;
-  --c-live: #c62828;
-  --c-pts3: #2e7d32;
-  --c-pts1: #e65100;
-  --c-pts0: #9e9e9e;
+  --c-bg:      #eef1f6;
+  --c-card:    #ffffff;
+  --c-border:  #d4d9e3;
+  --c-primary: #002868;
+  --c-accent:  #bf0a30;
+  --c-gold:    #c9a84c;
+  --c-live:    #bf0a30;
+  --c-pts3:    #1a7a3c;
+  --c-pts1:    #c96a00;
+  --c-pts0:    #9e9e9e;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -14,7 +16,7 @@
 body {
   font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
   background: var(--c-bg);
-  color: #212121;
+  color: #1a1f36;
   max-width: 640px;
   margin: 0 auto;
   padding-bottom: 2rem;
@@ -22,18 +24,24 @@ body {
 
 /* ── Header ─────────────────────────────────────────────── */
 header {
-  background: var(--c-primary);
+  background: linear-gradient(135deg, #001540 0%, var(--c-primary) 100%);
+  border-bottom: 3px solid var(--c-gold);
   color: #fff;
   padding: 0.75rem 1rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.75rem;
 }
 
-header h1 { font-size: 1rem; font-weight: 700; }
+header h1 {
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  flex: 1;
+}
 
-.header-logo { height: 2rem; width: auto; display: block; }
+.header-logo { height: 2rem; width: auto; display: block; flex-shrink: 0; }
 
 #status-bar {
   display: flex;
@@ -45,25 +53,14 @@ header h1 { font-size: 1rem; font-weight: 700; }
 
 #last-updated { font-size: 0.7rem; opacity: 0.8; }
 
-#refresh-btn {
-  background: transparent;
-  border: 1px solid rgba(255,255,255,0.5);
-  color: #fff;
-  font-size: 0.72rem;
-  padding: 0.15rem 0.5rem;
-  border-radius: 4px;
-  cursor: pointer;
-}
-#refresh-btn:hover { background: rgba(255,255,255,0.15); }
-
 /* ── Error banner ───────────────────────────────────────── */
 #error-banner {
   display: none;
-  background: #ffebee;
-  color: #b71c1c;
+  background: #fff0f0;
+  color: #8b0000;
   padding: 0.6rem 1rem;
   font-size: 0.82rem;
-  border-bottom: 1px solid #ef9a9a;
+  border-bottom: 1px solid #f5c6c6;
 }
 
 /* ── Tabs ───────────────────────────────────────────────── */
@@ -80,17 +77,19 @@ header h1 { font-size: 1rem; font-weight: 700; }
   flex: 1;
   padding: 0.7rem;
   border: none;
-  border-bottom: 2px solid transparent;
+  border-bottom: 3px solid transparent;
   margin-bottom: -2px;
   background: none;
   cursor: pointer;
   font-size: 0.88rem;
   color: #757575;
   font-weight: 500;
+  letter-spacing: 0.02em;
+  transition: color 0.15s;
 }
 .tab.active {
   color: var(--c-primary);
-  border-bottom-color: var(--c-primary);
+  border-bottom-color: var(--c-accent);
   font-weight: 700;
 }
 
@@ -113,16 +112,18 @@ header h1 { font-size: 1rem; font-weight: 700; }
 .ranking-table thead th {
   font-size: 0.7rem;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: #757575;
-  background: #fafafa;
+  letter-spacing: 0.06em;
+  color: #6b7280;
+  background: #f4f6fb;
   text-align: left;
 }
 
-.col-rank { width: 2.2rem; color: #9e9e9e; text-align: center; }
-.col-name { }
-.col-num  { width: 4.5rem; text-align: center; }
-.col-total{ width: 4.5rem; text-align: center; font-weight: 700; white-space: nowrap; }
+.ranking-table tbody tr:hover { background: #f9fafb; }
+
+.col-rank  { width: 2.2rem; color: #9e9e9e; text-align: center; }
+.col-name  { }
+.col-num   { width: 4.5rem; text-align: center; }
+.col-total { width: 4.5rem; text-align: center; font-weight: 700; white-space: nowrap; }
 
 .prov-mark { color: var(--c-pts1); font-size: 0.75em; margin-left: 2px; }
 .prov-note { font-size: 0.72rem; color: var(--c-pts1); padding: 0.4rem 0.75rem; }
@@ -134,10 +135,14 @@ header h1 { font-size: 1rem; font-weight: 700; }
 .match-card {
   background: var(--c-card);
   border: 1px solid var(--c-border);
-  border-radius: 8px;
+  border-radius: 10px;
   overflow: hidden;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
 }
-.match-card[data-state="in"] { border-color: var(--c-live); }
+.match-card[data-state="in"] {
+  border-color: var(--c-accent);
+  box-shadow: 0 2px 8px rgba(191,10,48,0.15);
+}
 
 details.match-card > summary {
   list-style: none;
@@ -154,39 +159,37 @@ details.match-card > summary::after {
   color: #9e9e9e;
   font-size: 0.85rem;
 }
-details[open].match-card > summary::after {
-  content: "▴";
-}
+details[open].match-card > summary::after { content: "▴"; }
 
 .match-header {
   padding: 0.55rem 0.75rem;
-  background: #fafafa;
+  background: #f6f8fc;
   border-bottom: 1px solid var(--c-border);
 }
-.match-teams { font-weight: 600; font-size: 0.92rem; }
+.match-teams { font-weight: 700; font-size: 0.92rem; color: var(--c-primary); }
 .match-meta {
   font-size: 0.72rem;
-  color: #757575;
-  margin-top: 0.2rem;
+  color: #6b7280;
+  margin-top: 0.25rem;
   display: flex;
   flex-wrap: wrap;
   gap: 0.4rem;
   align-items: center;
 }
-.match-result { font-weight: 700; color: #212121; font-size: 0.85rem; }
-.live-clock   { color: var(--c-live); font-weight: 700; }
+.match-result { font-weight: 700; color: #1a1f36; font-size: 0.88rem; }
+.live-clock   { color: var(--c-accent); font-weight: 700; }
 
 .badge {
   font-size: 0.62rem;
   font-weight: 700;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
-  padding: 0.1rem 0.35rem;
-  border-radius: 3px;
+  padding: 0.15rem 0.45rem;
+  border-radius: 4px;
 }
-.badge.pre  { background: #eeeeee; color: #757575; }
-.badge.in   { background: #ffebee; color: var(--c-live); }
-.badge.post { background: #e8f5e9; color: var(--c-pts3); }
+.badge.pre  { background: #e8eaf2; color: #5c6580; }
+.badge.in   { background: var(--c-accent); color: #fff; }
+.badge.post { background: #e6f4ea; color: var(--c-pts3); }
 
 .et-warn { color: var(--c-pts1); font-size: 0.8em; cursor: help; }
 
@@ -197,26 +200,25 @@ details[open].match-card > summary::after {
 
 .live-scan-bar {
   height: 2px;
-  background: #e0e0e0;
+  background: rgba(191,10,48,0.15);
   overflow: hidden;
   margin-top: 0.4rem;
   border-radius: 1px;
 }
-
 .live-scan-bar::after {
   content: "";
   display: block;
   height: 100%;
   width: 25%;
-  background: linear-gradient(90deg, transparent, var(--c-live), transparent);
+  background: linear-gradient(90deg, transparent, var(--c-accent), transparent);
   animation: scan 1.6s ease-in-out infinite;
 }
 
 /* ── Live probability bars ──────────────────────────────── */
 .live-stats {
   padding: 0.55rem 0.75rem 0.5rem;
-  background: #fafafa;
-  border-bottom: 1px solid var(--c-border);
+  background: #fdf6f7;
+  border-bottom: 1px solid #f5d0d8;
 }
 
 .prob-3col {
@@ -231,11 +233,11 @@ details[open].match-card > summary::after {
 .prob-names span {
   font-size: 0.75rem;
   font-weight: 700;
-  color: #212121;
+  color: #1a1f36;
 }
 .prob-names span:nth-child(2) {
   font-weight: 400;
-  color: #757575;
+  color: #9e9e9e;
 }
 
 .prob-pcts span {
@@ -256,17 +258,16 @@ details[open].match-card > summary::after {
   overflow: hidden;
   gap: 2px;
   margin: 0.35rem 0 0.3rem;
-  background: #e0e0e0;
+  background: var(--c-border);
 }
-
 .prob-seg { height: 100%; transition: flex 0.6s ease; }
 .prob-win  { background: var(--c-pts3); }
 .prob-draw { background: #bdbdbd; }
-.prob-lose { background: var(--c-live); }
+.prob-lose { background: var(--c-accent); }
 
 .prob-xg-row span {
   font-size: 0.7rem;
-  color: #424242;
+  color: #6b7280;
 }
 .prob-xg-row span:nth-child(2) {
   font-size: 0.62rem;
@@ -279,24 +280,24 @@ details[open].match-card > summary::after {
 .pred-table td {
   padding: 0.38rem 0.75rem;
   font-size: 0.83rem;
-  border-bottom: 1px solid #f5f5f5;
+  border-bottom: 1px solid #f0f2f5;
   vertical-align: middle;
 }
 .pred-table tr:last-child td { border-bottom: none; }
 
 .pred-table .col-name    { width: 26%; }
 .pred-table .pred-score  { width: 16%; text-align: center; font-variant-numeric: tabular-nums; }
-.pred-table .pred-winner { width: 30%; text-align: center; font-size: 0.78rem; color: #555; }
+.pred-table .pred-winner { width: 30%; text-align: center; font-size: 0.78rem; color: #6b7280; }
 .pred-table .pred-pts    { width: 28%; text-align: right; font-weight: 600; white-space: nowrap; }
 
-.pts-3 { background: #f1f8e9; }
+.pts-3 { background: #f0faf3; }
 .pts-3 .pred-pts { color: var(--c-pts3); }
 
-.pts-1 { background: #fff8e1; }
+.pts-1 { background: #fff8f0; }
 .pts-1 .pred-pts { color: var(--c-pts1); }
 
 .pts-0 .pred-pts { color: var(--c-pts0); }
-.pts-pending .pred-pts { color: #bdbdbd; }
+.pts-pending .pred-pts { color: #c8ccd6; }
 
 /* ── Generic ────────────────────────────────────────────── */
 .empty { padding: 2rem; text-align: center; color: #9e9e9e; font-size: 0.9rem; }
@@ -306,6 +307,6 @@ details[open].match-card > summary::after {
   text-align: center;
   padding: 1.5rem 1rem 1rem;
   font-size: 0.68rem;
-  color: #bdbdbd;
+  color: #c8ccd6;
   letter-spacing: 0.04em;
 }
