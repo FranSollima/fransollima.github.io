@@ -106,6 +106,11 @@ async function fetchESPN() {
   return parseESPN(data);
 }
 
+function getStat(competitor, name) {
+  const s = (competitor?.statistics ?? []).find(s => s.name === name);
+  return s != null ? parseFloat(s.displayValue ?? s.value ?? 0) : null;
+}
+
 function parseESPN(data) {
   return (data.events ?? []).map(event => {
     const comp = event.competitions?.[0];
@@ -130,10 +135,10 @@ function parseESPN(data) {
       completed:   statusType.completed ?? false,
       statusDesc:  statusType.description ?? "",
       period,
-      // period > 2 means the match went to extra time (3 = ET1, 4 = ET2, 5 = penalties).
-      // ESPN may include ET goals in the score, so flag it for the UI.
       wentToET:    period > 2,
-      displayClock: comp.status?.displayClock ?? event.status?.displayClock ?? "",
+      displayClock:      comp.status?.displayClock ?? event.status?.displayClock ?? "",
+      homeShotsOnTarget: getStat(home, "shotsOnTarget"),
+      awayShotsOnTarget: getStat(away, "shotsOnTarget"),
     };
   }).filter(Boolean);
 }
@@ -188,6 +193,80 @@ function scoreAll(preds, events) {
       puntos: calcPuntos(pred.goles1, pred.goles2, realG1, realG2),
     };
   });
+}
+
+// ─── LIVE PROBABILITY (Poisson) ──────────────────────────────────────────────
+const XG_PER_SOT  = 0.10;   // xG por tiro al arco (promedio crudo)
+const PRIOR_RATE  = 1.1 / 90; // tasa base: ~1.1 goles esperados por equipo cada 90'
+
+function parseMinute(displayClock, isHalfTime) {
+  if (isHalfTime) return 45;
+  if (!displayClock) return 0;
+  const m = displayClock.match(/^(\d+)/);
+  if (!m) return 0;
+  const extra = displayClock.match(/\+(\d+)/);
+  return parseInt(m[1], 10) + (extra ? parseInt(extra[1], 10) : 0);
+}
+
+function poisson(lambda, k) {
+  if (lambda <= 0) return k === 0 ? 1 : 0;
+  let p = Math.exp(-lambda);
+  for (let i = 0; i < k; i++) p *= lambda / (i + 1);
+  return p;
+}
+
+function calcMatchProbs(ev) {
+  if (ev.wentToET) return null;
+  const isHalfTime = ev.statusDesc?.toLowerCase().includes("half");
+  const minPlayed  = parseMinute(ev.displayClock, isHalfTime);
+  const minLeft    = isHalfTime ? 45 : Math.max(0, 90 - minPlayed);
+
+  const xgHome = (ev.homeShotsOnTarget ?? 0) * XG_PER_SOT;
+  const xgAway = (ev.awayShotsOnTarget ?? 0) * XG_PER_SOT;
+
+  // Blending observed rate with prior: early in the match, el prior domina;
+  // después de 30' los datos observados tienen peso total.
+  const w        = Math.min(minPlayed / 30, 1);
+  const rateHome = w * (xgHome / Math.max(minPlayed, 1)) + (1 - w) * PRIOR_RATE;
+  const rateAway = w * (xgAway / Math.max(minPlayed, 1)) + (1 - w) * PRIOR_RATE;
+
+  const lambdaHome = rateHome * minLeft;
+  const lambdaAway = rateAway * minLeft;
+
+  const hs = ev.homeScore ?? 0, as_ = ev.awayScore ?? 0;
+  let pWin = 0, pDraw = 0, pLose = 0;
+  for (let a = 0; a <= 8; a++) {
+    for (let b = 0; b <= 8; b++) {
+      const p = poisson(lambdaHome, a) * poisson(lambdaAway, b);
+      const fh = hs + a, fa = as_ + b;
+      if      (fh > fa) pWin  += p;
+      else if (fh === fa) pDraw += p;
+      else              pLose += p;
+    }
+  }
+  return { pWin, pDraw, pLose };
+}
+
+function renderLiveStats(ev) {
+  const probs = calcMatchProbs(ev);
+  if (!probs) return "";
+  const { pWin, pDraw, pLose } = probs;
+  const ph = Math.round(pWin  * 100);
+  const pd = Math.round(pDraw * 100);
+  const pa = Math.round(pLose * 100);
+  const bar = (label, pct, cls) =>
+    `<div class="prob-row">
+      <span class="prob-team">${esc(label)}</span>
+      <div class="prob-bar-track"><div class="prob-bar-fill ${cls}" style="width:${pct}%"></div></div>
+      <span class="prob-pct">${pct}%</span>
+    </div>`;
+  return `<div class="live-stats">
+    <div class="prob-title">Probabilidad de resultado</div>
+    ${bar(ev.homeAbbr ?? "Local",     ph, "prob-win")}
+    ${bar("Empate",                    pd, "prob-draw")}
+    ${bar(ev.awayAbbr ?? "Visitante", pa, "prob-lose")}
+    <div class="prob-note">xG × tiros al arco · Poisson · estimación</div>
+  </div>`;
 }
 
 function buildRanking(scored) {
@@ -361,6 +440,7 @@ function renderPartidos(groups) {
         </div>
         ${state === "in" ? '<div class="live-scan-bar"></div>' : ""}
       </summary>
+      ${state === "in" ? renderLiveStats(ev) : ""}
       <table class="pred-table"><tbody>${predRows}</tbody></table>
     </details>`;
   }).join("");
