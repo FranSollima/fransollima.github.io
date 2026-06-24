@@ -16,6 +16,7 @@ const POLL_IDLE_MS = 60_000;   // 1 min — no hay partidos en vivo
 // ─── STATE ───────────────────────────────────────────────────────────────────
 let pollTimer    = null;
 let equiposMap   = null;
+let displayMap   = null;
 let jugadoresMap = null;
 let predicciones = null;
 const probsCache = new Map(); // ev.id → last valid { pWin, pDraw, pLose, source }
@@ -56,13 +57,18 @@ async function loadJugadores() {
 async function buildEquiposMap() {
   const text = await loadText("./equipos.csv");
   const rows = parseCSV(text);
-  const map = new Map();
+  const equipos = new Map();
+  const display = new Map();
   for (const row of rows) {
-    const es   = row["ES"]?.toUpperCase().trim();
-    const abbr = row["ESPN_ABBR"]?.toUpperCase().trim();
-    if (es && abbr) map.set(es, abbr);
+    const es    = row["ES"]?.toUpperCase().trim();
+    const abbr  = row["ESPN_ABBR"]?.toUpperCase().trim();
+    const nombre = row["NOMBRE"]?.trim();
+    if (es && abbr) {
+      equipos.set(es, abbr);
+      if (nombre && !display.has(abbr)) display.set(abbr, nombre);
+    }
   }
-  return map;
+  return { equipos, display };
 }
 
 // ─── PREDICCIONES ────────────────────────────────────────────────────────────
@@ -427,8 +433,8 @@ function renderPartidos(groups) {
     const ev    = g.event;
     const state = ev?.state ?? "no_encontrado";
 
-    const displayHome = ev?.homeDisplay ?? g.equipo1;
-    const displayAway = ev?.awayDisplay ?? g.equipo2;
+    const displayHome = (ev?.homeAbbr && displayMap?.get(ev.homeAbbr)) || ev?.homeDisplay || g.equipo1;
+    const displayAway = (ev?.awayAbbr && displayMap?.get(ev.awayAbbr)) || ev?.awayDisplay || g.equipo2;
 
     let resultHTML = "";
     if ((state === "post" || state === "in") && ev.homeScore !== null) {
@@ -461,9 +467,9 @@ function renderPartidos(groups) {
       const liveTag    = s.estado === "in" ? ' <span class="prov-mark" title="En vivo">*</span>' : "";
       const nombre     = jugadoresMap?.get(s.jugador) ?? s.jugador;
       const winnerText = s.goles1 > s.goles2
-        ? (s.abbr1 ?? s.equipo1)
+        ? (displayMap?.get(s.abbr1) ?? s.abbr1 ?? s.equipo1)
         : s.goles1 < s.goles2
-          ? (s.abbr2 ?? s.equipo2)
+          ? (displayMap?.get(s.abbr2) ?? s.abbr2 ?? s.equipo2)
           : "Empate";
       return `<tr class="${cls}">
         <td class="col-name">${esc(nombre)}</td>
@@ -543,7 +549,9 @@ async function init() {
   initTabs();
 
   try {
-    equiposMap   = await buildEquiposMap();
+    const eq     = await buildEquiposMap();
+    equiposMap   = eq.equipos;
+    displayMap   = eq.display;
     jugadoresMap = await loadJugadores();
     predicciones = await loadPredicciones(equiposMap);
   } catch (err) {
