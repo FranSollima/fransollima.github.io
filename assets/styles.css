@@ -333,5 +333,4 @@ details[open].match-card > summary::after { content: "▴"; }
   margin: 0 auto 0.5rem;
   height: 6rem;
   width: auto;
-  opacity: 0.80;
 }
