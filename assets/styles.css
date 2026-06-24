@@ -20,14 +20,14 @@ body {
   background-color: var(--c-bg);
   background-image: repeating-linear-gradient(
     180deg,
-    rgba(0,  40, 104, 0.5)   0px,
-    rgba(0,  40, 104, 0.5)  40px,
-    rgba(191, 10,  48, 0.5)  40px,
-    rgba(191, 10,  48, 0.5)  80px,
-    rgba(0,  104,  71, 0.5)  80px,
-    rgba(0,  104,  71, 0.5) 120px,
-    rgba(201,168,  76, 0.5) 120px,
-    rgba(201,168,  76, 0.5) 160px
+    rgba(0,  40, 104, 0.8)   0px,
+    rgba(0,  40, 104, 0.8)  40px,
+    rgba(191, 10,  48, 0.8)  40px,
+    rgba(191, 10,  48, 0.8)  80px,
+    rgba(0,  104,  71, 0.8)  80px,
+    rgba(0,  104,  71, 0.8) 120px,
+    rgba(201,168,  76, 0.8) 120px,
+    rgba(201,168,  76, 0.8) 160px
   );
   color: #1a1f36;
   max-width: 640px;
@@ -111,7 +111,7 @@ header h1 {
 .tab-panel.active { display: block; }
 
 /* ── Ranking table ──────────────────────────────────────── */
-#ranking-container { padding: 0.5rem; }
+#ranking-container { padding: 0.8rem; }
 
 .ranking-table {
   width: 100%;
@@ -147,7 +147,7 @@ header h1 {
 .pts-live  { color: var(--c-pts1); font-size: 0.82em; font-weight: 400; }
 
 /* ── Match cards ────────────────────────────────────────── */
-#partidos-container { padding: 0.5rem; display: flex; flex-direction: column; gap: 0.6rem; }
+#partidos-container { padding: 0.8rem; display: flex; flex-direction: column; gap: 0.6rem; }
 
 .match-card {
   background: rgba(255,255,255,0.88);
@@ -179,7 +179,7 @@ details.match-card > summary::after {
 details[open].match-card > summary::after { content: "▴"; }
 
 .match-header {
-  padding: 0.55rem 0.75rem;
+  padding: 0.85rem 0.75rem;
   background: rgba(246,248,252,0.92);
   border-bottom: 1px solid var(--c-border);
 }
@@ -233,7 +233,7 @@ details[open].match-card > summary::after { content: "▴"; }
 
 /* ── Live probability bars ──────────────────────────────── */
 .live-stats {
-  padding: 0.55rem 0.75rem 0.5rem;
+  padding: 0.85rem 0.75rem 0.8rem;
   background: #fdf6f7;
   border-bottom: 1px solid #f5d0d8;
 }
