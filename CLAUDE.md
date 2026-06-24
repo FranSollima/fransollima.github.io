@@ -40,6 +40,8 @@ GET https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard?l
   - `competitor.homeAway` — `"home"` o `"away"`
   - `competitor.team.abbreviation` — abreviatura de 3 letras (ej. `"ARG"`)
   - `competitor.score` — goles totales (incluye ET si hubo)
+  - `competitor.statistics[].name` / `.displayValue` — estadísticas por equipo (ej. `"shotsOnTarget"`)
+  - `competition.odds[0].moneyline.home/draw/away.current.odds` — odds en formato americano (fuente: DraftKings vía ESPN); puede estar ausente
 
 **Importante**: ESPN no expone desglose de goles por período en su API de soccer. Si un partido va a prórroga, el `score` incluye goles de ET. Por eso existe `MARCADOR_CUENTA = "reglamentario"` y el flag `wentToET` para mostrar un aviso `⚠ ET` en la UI.
 
@@ -49,7 +51,7 @@ GET https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard?l
 
 ```js
 const MARCADOR_CUENTA = "reglamentario"; // "reglamentario" | "final"
-const POLL_LIVE_MS = 45_000;   // refresco con partido en vivo
+const POLL_LIVE_MS = 10_000;   // refresco con partido en vivo
 const POLL_IDLE_MS = 300_000;  // refresco sin partidos en vivo
 ```
 
@@ -83,6 +85,21 @@ function calcPuntos(predG1, predG2, realG1, realG2) {
 ### Puntos provisorios vs confirmados
 
 `buildRanking` separa `ptsPost` (partidos terminados) y `ptsLive` (partidos en vivo). El ranking ordena por `ptsPost + ptsLive` pero la UI muestra `"44 (+1)"` para que se vea la diferencia. Al terminar el partido en vivo, el `(+X)` desaparece y el número base sube.
+
+Criterios de desempate en el ranking: total de puntos → cantidad de exactos → nombre alfabético.
+
+### Ordenamiento del panel Partidos
+
+`groupByMatch` pone primero los partidos con `state === "in"`, luego ordena por fecha del evento. Dentro de cada partido, las predicciones se ordenan por: puntos desc → resultado predicho (equipo1 gana / empate / equipo2 gana) → marcador → nombre del jugador.
+
+### Probabilidades en vivo
+
+Durante partidos en vivo, `renderLiveStats` muestra una barra de probabilidades con porcentajes win/draw/lose. La fuente de datos sigue esta prioridad:
+
+1. **Odds de casas de apuesta** (`competition.odds[0].moneyline` vía ESPN/DraftKings): se convierten de formato americano a probabilidad con `americanToProb()` y se normalizan para sumar 100%.
+2. **Modelo Poisson** (fallback): usa tiros al arco (`shotsOnTarget`) como proxy de xG. Constantes: `XG_PER_SOT = 0.10` (xG por tiro) y `PRIOR_RATE = 1.1/90` (tasa base por minuto). El modelo mezcla la tasa observada con el prior según cuántos minutos se jugaron (`w = min(minPlayed/30, 1)`). Simula hasta 8 goles adicionales por equipo via Poisson.
+
+Si el partido fue a prórroga (`wentToET === true`), `calcMatchProbs` devuelve `null` y no se muestran probabilidades.
 
 ### Polling
 
