@@ -110,10 +110,13 @@ header h1 {
 .tab-panel.active { display: block; }
 
 /* ── Ranking table ──────────────────────────────────────── */
+#ranking-container { padding: 0.5rem; }
+
 .ranking-table {
   width: 100%;
   border-collapse: collapse;
   background: rgba(255,255,255,0.88);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
 }
 
 .ranking-table th,
