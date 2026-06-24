@@ -474,9 +474,9 @@ function renderPartidos(groups) {
       const liveTag    = s.estado === "in" ? ' <span class="prov-mark" title="En vivo">*</span>' : "";
       const nombre     = jugadoresMap?.get(s.jugador) ?? s.jugador;
       const winnerText = s.goles1 > s.goles2
-        ? (displayMap?.get(s.abbr1) ?? s.abbr1 ?? s.equipo1)
+        ? (s.abbr1 ?? s.equipo1)
         : s.goles1 < s.goles2
-          ? (displayMap?.get(s.abbr2) ?? s.abbr2 ?? s.equipo2)
+          ? (s.abbr2 ?? s.equipo2)
           : "Empate";
       return `<tr class="${cls}">
         <td class="col-name">${esc(nombre)}</td>
