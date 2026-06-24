@@ -134,6 +134,7 @@ function parseESPN(data) {
       state:       statusType.state ?? "pre",
       completed:   statusType.completed ?? false,
       statusDesc:  statusType.description ?? "",
+      statusName:  statusType.name ?? "",
       period,
       wentToET:    period > 2,
       displayClock:      comp.status?.displayClock ?? event.status?.displayClock ?? "",
@@ -217,7 +218,7 @@ function poisson(lambda, k) {
 
 function calcMatchProbs(ev) {
   if (ev.wentToET) return null;
-  const isHalfTime = ev.statusDesc?.toLowerCase().includes("half");
+  const isHalfTime = ev.statusName === "STATUS_HALFTIME";
   const minPlayed  = parseMinute(ev.displayClock, isHalfTime);
   const minLeft    = isHalfTime ? 45 : Math.max(0, 90 - minPlayed);
 
@@ -435,7 +436,7 @@ function renderPartidos(groups) {
         <div class="match-meta">
           ${badgeHTML(state)}
           ${resultHTML}
-          ${state === "in" ? `<span class="live-clock">${ev.statusDesc?.toLowerCase().includes("half") ? "Entretiempo" : esc(ev.displayClock)}</span>` : ""}
+          ${state === "in" ? `<span class="live-clock">${ev.statusName === "STATUS_HALFTIME" ? "Entretiempo" : esc(ev.displayClock)}</span>` : ""}
           <span class="match-date">${formatDate(ev?.date)}</span>
         </div>
         ${state === "in" ? '<div class="live-scan-bar"></div>' : ""}
