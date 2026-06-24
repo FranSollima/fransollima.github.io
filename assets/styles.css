@@ -13,9 +13,22 @@
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
+html { background: var(--c-bg); }
+
 body {
   font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-  background: var(--c-bg);
+  background-color: var(--c-bg);
+  background-image: repeating-linear-gradient(
+    180deg,
+    rgba(0,  40, 104, 0.07)   0px,
+    rgba(0,  40, 104, 0.07)  80px,
+    rgba(191, 10,  48, 0.07)  80px,
+    rgba(191, 10,  48, 0.07) 160px,
+    rgba(0,  104,  71, 0.07) 160px,
+    rgba(0,  104,  71, 0.07) 240px,
+    rgba(201,168,  76, 0.07) 240px,
+    rgba(201,168,  76, 0.07) 320px
+  );
   color: #1a1f36;
   max-width: 640px;
   margin: 0 auto;
@@ -100,7 +113,7 @@ header h1 {
 .ranking-table {
   width: 100%;
   border-collapse: collapse;
-  background: var(--c-card);
+  background: rgba(255,255,255,0.88);
 }
 
 .ranking-table th,
@@ -114,11 +127,11 @@ header h1 {
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: #6b7280;
-  background: #f4f6fb;
+  background: rgba(244,246,251,0.90);
   text-align: left;
 }
 
-.ranking-table tbody tr:hover { background: #f9fafb; }
+.ranking-table tbody tr:hover { background: rgba(249,250,251,0.90); }
 
 .col-rank  { width: 2.2rem; color: #9e9e9e; text-align: center; }
 .col-name  { }
@@ -133,7 +146,7 @@ header h1 {
 #partidos-container { padding: 0.5rem; display: flex; flex-direction: column; gap: 0.6rem; }
 
 .match-card {
-  background: var(--c-card);
+  background: rgba(255,255,255,0.88);
   border: 1px solid var(--c-border);
   border-radius: 10px;
   overflow: hidden;
@@ -163,7 +176,7 @@ details[open].match-card > summary::after { content: "▴"; }
 
 .match-header {
   padding: 0.55rem 0.75rem;
-  background: #f6f8fc;
+  background: rgba(246,248,252,0.92);
   border-bottom: 1px solid var(--c-border);
 }
 .match-teams { font-weight: 700; font-size: 0.92rem; color: var(--c-primary); }
@@ -305,8 +318,16 @@ details[open].match-card > summary::after { content: "▴"; }
 /* ── Footer ─────────────────────────────────────────────── */
 .app-footer {
   text-align: center;
-  padding: 1.5rem 1rem 1rem;
+  padding: 1.5rem 1rem 1.5rem;
   font-size: 0.68rem;
   color: #c8ccd6;
   letter-spacing: 0.04em;
+}
+
+.wc-logo {
+  display: block;
+  margin: 0 auto 0.75rem;
+  height: 6rem;
+  width: auto;
+  opacity: 0.80;
 }
