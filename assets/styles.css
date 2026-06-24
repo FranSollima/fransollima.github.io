@@ -206,7 +206,7 @@ details[open].match-card > summary::after {
   display: block;
   height: 100%;
   width: 25%;
-  background: linear-gradient(90deg, transparent, #4caf50, #a5d6a7, transparent);
+  background: linear-gradient(90deg, transparent, var(--c-live), transparent);
   animation: scan 1.6s ease-in-out infinite;
 }
 
@@ -268,16 +268,7 @@ details[open].match-card > summary::after {
 }
 .prob-xg-row span:nth-child(2) {
   font-size: 0.62rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: #bdbdbd;
-}
-
-.prob-source {
-  font-size: 0.62rem;
-  color: #bdbdbd;
-  text-align: center;
-  margin-top: 0.25rem;
+  letter-spacing: 0.03em;
 }
 
 /* ── Predictions grid inside each card ─────────────────── */

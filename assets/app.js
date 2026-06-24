@@ -295,7 +295,6 @@ function renderLiveStats(ev) {
     <div class="prob-3col prob-xg-row">
       <span>${xgHome}</span><span>Est. xG</span><span>${xgAway}</span>
     </div>
-    <div class="prob-source">${probs.source === "odds" ? "DraftKings · en vivo" : "Poisson · tiros al arco"}</div>
   </div>`;
 }
 
