@@ -316,25 +316,36 @@ function renderPartidos(groups) {
       }
     }
 
-    // Sort: pts desc (null counts as -1), then display name alpha
+    // winner sort key: 0 = equipo1 gana, 1 = empate, 2 = equipo2 gana
+    const winnerKey = s => s.goles1 > s.goles2 ? 0 : s.goles1 === s.goles2 ? 1 : 2;
+
     const sortedPreds = [...g.preds].sort((a, b) => {
-      const pa = a.puntos ?? -1;
-      const pb = b.puntos ?? -1;
+      const pa = a.puntos ?? -1, pb = b.puntos ?? -1;
       if (pb !== pa) return pb - pa;
+      const wa = winnerKey(a), wb = winnerKey(b);
+      if (wa !== wb) return wa - wb;
+      if (a.goles1 !== b.goles1) return a.goles1 - b.goles1;
+      if (a.goles2 !== b.goles2) return a.goles2 - b.goles2;
       const na = jugadoresMap?.get(a.jugador) ?? a.jugador;
       const nb = jugadoresMap?.get(b.jugador) ?? b.jugador;
       return na.localeCompare(nb, "es");
     });
 
     const predRows = sortedPreds.map(s => {
-      const cls     = ptsClass(s.puntos, s.estado);
-      const ptsText = s.puntos !== null
+      const cls        = ptsClass(s.puntos, s.estado);
+      const ptsText    = s.puntos !== null
         ? `${s.puntos} pt${s.puntos !== 1 ? "s" : ""}`
         : (state === "pre" || state === "no_encontrado" ? "—" : "?");
-      const liveTag = s.estado === "in" ? ' <span class="prov-mark" title="En vivo">*</span>' : "";
-      const nombre  = jugadoresMap?.get(s.jugador) ?? s.jugador;
+      const liveTag    = s.estado === "in" ? ' <span class="prov-mark" title="En vivo">*</span>' : "";
+      const nombre     = jugadoresMap?.get(s.jugador) ?? s.jugador;
+      const winnerText = s.goles1 > s.goles2
+        ? (s.abbr1 ?? s.equipo1)
+        : s.goles1 < s.goles2
+          ? (s.abbr2 ?? s.equipo2)
+          : "Empate";
       return `<tr class="${cls}">
         <td class="col-name">${esc(nombre)}</td>
+        <td class="pred-winner">${esc(winnerText)}</td>
         <td class="pred-score">${s.goles1} - ${s.goles2}</td>
         <td class="pred-pts">${ptsText}${liveTag}</td>
       </tr>`;
@@ -346,7 +357,7 @@ function renderPartidos(groups) {
         <div class="match-meta">
           ${badgeHTML(state)}
           ${resultHTML}
-          ${state === "in" ? `<span class="live-clock">${esc(ev.displayClock)}</span>` : ""}
+          ${state === "in" ? `<span class="live-clock">${ev.statusDesc?.toLowerCase().includes("half") ? "Entretiempo" : esc(ev.displayClock)}</span>` : ""}
           <span class="match-date">${formatDate(ev?.date)}</span>
         </div>
       </summary>
