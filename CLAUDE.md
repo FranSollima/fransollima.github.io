@@ -170,6 +170,10 @@ init()
 | `(+X)` nunca desaparece | ESPN tardó en marcar el partido como `post` |
 | App no carga nada | Error de CORS — no abrir `index.html` directo, usar servidor local |
 
+## Versión
+
+El número de versión vive en el `<footer class="app-footer">` de cada `index.html` (raíz y `extra/`). Se actualiza manualmente al mergear a `main`. Formato semver: `vMAJOR.MINOR.PATCH` — incrementar `PATCH` para fixes, `MINOR` para features nuevas.
+
 ## Deploy
 
 Push a `main` → GitHub Actions publica automáticamente en GitHub Pages. No hay build. Los archivos CSV se sirven como estáticos y el browser los descarga frescos en cada sesión (sin cache agresivo).
