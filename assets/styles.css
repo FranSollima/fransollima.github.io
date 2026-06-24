@@ -122,7 +122,7 @@ header h1 {
 
 .ranking-table th,
 .ranking-table td {
-  padding: 0.6rem 0.75rem;
+  padding: 0.38rem 0.75rem;
   border-bottom: 1px solid var(--c-border);
 }
 
@@ -322,7 +322,7 @@ details[open].match-card > summary::after { content: "▴"; }
 /* ── Footer ─────────────────────────────────────────────── */
 .app-footer {
   text-align: center;
-  padding: 1.5rem 1rem 1.5rem;
+  padding: 0.5rem 1rem 1.5rem;
   font-size: 0.68rem;
   color: #c8ccd6;
   letter-spacing: 0.04em;
@@ -330,7 +330,7 @@ details[open].match-card > summary::after { content: "▴"; }
 
 .wc-logo {
   display: block;
-  margin: 0 auto 0.75rem;
+  margin: 0 auto 0.5rem;
   height: 6rem;
   width: auto;
   opacity: 0.80;
