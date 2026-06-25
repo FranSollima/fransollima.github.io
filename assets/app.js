@@ -218,7 +218,7 @@ function scoreAll(preds, events) {
 }
 
 // ─── LIVE PROBABILITY (Poisson) ──────────────────────────────────────────────
-const XG_PER_SOT  = 0.10;   // xG por tiro al arco (promedio crudo)
+const XG_PER_SOT  = 0.25;   // xG por tiro al arco (shots on target tienen ~25% conversión en élite)
 const PRIOR_RATE  = 1.1 / 90; // tasa base: ~1.1 goles esperados por equipo cada 90'
 
 function parseMinute(displayClock, isHalfTime) {
