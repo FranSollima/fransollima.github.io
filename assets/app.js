@@ -155,6 +155,10 @@ function parseESPN(data) {
       displayClock:      comp.status?.displayClock ?? event.status?.displayClock ?? "",
       homeShotsOnTarget: getStat(home, "shotsOnTarget"),
       awayShotsOnTarget: getStat(away, "shotsOnTarget"),
+      homeShots:         getStat(home, "shots"),
+      awayShots:         getStat(away, "shots"),
+      homePossession:    getStat(home, "possessionPct"),
+      awayPossession:    getStat(away, "possessionPct"),
       odds: (() => {
         const ml = comp.odds?.[0]?.moneyline;
         if (!ml) return null;
@@ -220,8 +224,16 @@ function scoreAll(preds, events) {
 }
 
 // ─── LIVE PROBABILITY (Poisson) ──────────────────────────────────────────────
-const XG_PER_SOT  = 0.25;   // xG por tiro al arco (shots on target tienen ~25% conversión en élite)
-const PRIOR_RATE  = 1.1 / 90; // tasa base: ~1.1 goles esperados por equipo cada 90'
+const XG_PER_SOT        = 0.25;        // xG por tiro al arco (~25% conversión en élite)
+const XG_PER_SHOT_WIDE  = 0.03;        // xG por tiro desviado/bloqueado
+const PRIOR_RATE        = 1.1 / 90;   // tasa base: ~1.1 goles esperados por equipo cada 90'
+
+// xG acumulado combinando SOT y tiros desviados
+function calcXg(sot, shots) {
+  const sotXg      = (sot   || 0) * XG_PER_SOT;
+  const offTarget  = Math.max(0, (shots || 0) - (sot || 0));
+  return sotXg + offTarget * XG_PER_SHOT_WIDE;
+}
 
 function parseMinute(displayClock, isHalfTime) {
   if (isHalfTime) return 45;
@@ -259,15 +271,20 @@ function calcMatchProbs(ev) {
     return isValidProbs(r) ? r : null;
   }
 
-  // Fallback: Poisson model from shots on target
+  // Fallback: Poisson model from shots + possession
   const isHalfTime = ev.statusName === "STATUS_HALFTIME";
   const minPlayed  = parseMinute(ev.displayClock, isHalfTime);
   const minLeft    = isHalfTime ? 45 : Math.max(0, 90 - minPlayed);
-  const xgHome = (ev.homeShotsOnTarget || 0) * XG_PER_SOT;
-  const xgAway = (ev.awayShotsOnTarget || 0) * XG_PER_SOT;
+  const xgHome = calcXg(ev.homeShotsOnTarget, ev.homeShots);
+  const xgAway = calcXg(ev.awayShotsOnTarget, ev.awayShots);
+  // Prior pesado por posesión: más posesión → mayor tasa base esperada
+  const possHome  = ev.homePossession ?? 50;
+  const possAway  = ev.awayPossession ?? 50;
+  const priorHome = PRIOR_RATE * (possHome / 50);
+  const priorAway = PRIOR_RATE * (possAway / 50);
   const w        = Math.min(minPlayed / 30, 1);
-  const rateHome = w * (xgHome / Math.max(minPlayed, 1)) + (1 - w) * PRIOR_RATE;
-  const rateAway = w * (xgAway / Math.max(minPlayed, 1)) + (1 - w) * PRIOR_RATE;
+  const rateHome = w * (xgHome / Math.max(minPlayed, 1)) + (1 - w) * priorHome;
+  const rateAway = w * (xgAway / Math.max(minPlayed, 1)) + (1 - w) * priorAway;
   const lambdaHome = rateHome * minLeft;
   const lambdaAway = rateAway * minLeft;
   const hs = ev.homeScore ?? 0, as_ = ev.awayScore ?? 0;
@@ -298,8 +315,8 @@ function renderLiveStats(ev) {
   const ph = Math.round(pWin  * 100);
   const pd = Math.round(pDraw * 100);
   const pa = Math.round(pLose * 100);
-  const xgHome = ((ev.homeShotsOnTarget ?? 0) * XG_PER_SOT).toFixed(1);
-  const xgAway = ((ev.awayShotsOnTarget ?? 0) * XG_PER_SOT).toFixed(1);
+  const xgHome = calcXg(ev.homeShotsOnTarget, ev.homeShots).toFixed(2);
+  const xgAway = calcXg(ev.awayShotsOnTarget, ev.awayShots).toFixed(2);
   const home = esc(ev.homeAbbr ?? "Local");
   const away = esc(ev.awayAbbr ?? "Visit.");
 
