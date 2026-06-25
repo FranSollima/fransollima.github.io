@@ -432,7 +432,7 @@ function renderRanking(ranking, hasLive, jugMap) {
   return html;
 }
 
-function renderPartidos(groups) {
+function renderPartidos(groups, openKeys = new Set()) {
   if (!groups.length) return '<p class="empty">No hay predicciones cargadas.</p>';
 
   return groups.map(g => {
@@ -485,7 +485,7 @@ function renderPartidos(groups) {
       </tr>`;
     }).join("");
 
-    return `<details class="match-card" data-state="${esc(state)}"${state === "in" ? " open" : ""}>
+    return `<details class="match-card" data-key="${esc(g.key)}" data-state="${esc(state)}"${openKeys.has(g.key) ? " open" : ""}>
       <summary class="match-header">
         <div class="match-teams">${esc(displayHome)} vs ${esc(displayAway)}</div>
         <div class="match-meta">
@@ -512,8 +512,18 @@ async function refresh() {
     const groups  = groupByMatch(scored);
     const hasLive = events.some(ev => ev.state === "in");
 
+    const prevOpen = new Set(
+      [...document.querySelectorAll('#partidos-container details[open]')].map(el => el.dataset.key)
+    );
+    // First render: auto-open live matches; subsequent renders: preserve user state
+    const openKeys = prevOpen.size > 0
+      ? prevOpen
+      : new Set(groups.filter(g => g.event?.state === "in").map(g => g.key));
+
+    const scrollY = window.scrollY;
     document.getElementById("ranking-container").innerHTML  = renderRanking(ranking, hasLive, jugadoresMap);
-    document.getElementById("partidos-container").innerHTML = renderPartidos(groups);
+    document.getElementById("partidos-container").innerHTML = renderPartidos(groups, openKeys);
+    window.scrollTo(0, scrollY);
 
 
     scheduleNext(hasLive);
