@@ -121,7 +121,9 @@ async function fetchESPN() {
 
 function getStat(competitor, name) {
   const s = (competitor?.statistics ?? []).find(s => s.name === name);
-  return s != null ? parseFloat(s.displayValue ?? s.value ?? 0) : null;
+  if (s == null) return null;
+  const v = parseFloat(s.displayValue ?? s.value ?? 0);
+  return isFinite(v) ? v : null;
 }
 
 function parseESPN(data) {
@@ -261,8 +263,8 @@ function calcMatchProbs(ev) {
   const isHalfTime = ev.statusName === "STATUS_HALFTIME";
   const minPlayed  = parseMinute(ev.displayClock, isHalfTime);
   const minLeft    = isHalfTime ? 45 : Math.max(0, 90 - minPlayed);
-  const xgHome = (ev.homeShotsOnTarget ?? 0) * XG_PER_SOT;
-  const xgAway = (ev.awayShotsOnTarget ?? 0) * XG_PER_SOT;
+  const xgHome = (ev.homeShotsOnTarget || 0) * XG_PER_SOT;
+  const xgAway = (ev.awayShotsOnTarget || 0) * XG_PER_SOT;
   const w        = Math.min(minPlayed / 30, 1);
   const rateHome = w * (xgHome / Math.max(minPlayed, 1)) + (1 - w) * PRIOR_RATE;
   const rateAway = w * (xgAway / Math.max(minPlayed, 1)) + (1 - w) * PRIOR_RATE;
