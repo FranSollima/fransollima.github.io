@@ -206,9 +206,12 @@ details[open].match-card > summary::after { content: "▴"; }
   padding: 0.15rem 0.45rem;
   border-radius: 4px;
 }
-.badge.pre  { background: #e8eaf2; color: #5c6580; }
-.badge.in   { background: var(--c-accent); color: #fff; }
-.badge.post { background: #e6f4ea; color: var(--c-pts3); }
+.badge.pre   { background: #e8eaf2; color: #5c6580; }
+.badge.in    { background: var(--c-accent); color: #fff; }
+.badge.post  { background: #e6f4ea; color: var(--c-pts3); }
+.badge.round { background: #e8edf5; color: var(--c-primary); }
+
+.no-preds { padding: 0.6rem 0.75rem; font-size: 0.8rem; color: #9e9e9e; }
 
 .et-warn { color: var(--c-pts1); font-size: 0.8em; cursor: help; }
 
