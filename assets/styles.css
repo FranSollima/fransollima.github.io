@@ -415,7 +415,7 @@ details[open].match-card > summary::after { content: "▴"; }
 }
 
 .group-table-wrap {
-  overflow-x: auto;
+  overflow-x: visible;
 }
 
 .group-title {
@@ -437,10 +437,10 @@ details[open].match-card > summary::after { content: "▴"; }
 
 .group-table th,
 .group-table td {
-  padding: 0.32rem 0.25rem;
+  padding: 0.28rem 0.1rem;
   border-bottom: 1px solid var(--c-border);
   text-align: center;
-  font-size: 0.76rem;
+  font-size: 0.72rem;
 }
 
 .group-table thead th {
@@ -457,33 +457,19 @@ details[open].match-card > summary::after { content: "▴"; }
   border-left: 3px solid var(--c-primary);
 }
 
-/* Sticky columns: # y Equipo fijos, stats hacen scroll */
-.col-pos  {
-  width: 2rem;
-  min-width: 2rem;
+.col-pos {
+  width: 1.2rem;
   color: #9e9e9e;
-  position: sticky;
-  left: 0;
-  z-index: 1;
-  background: var(--c-card);
 }
-.group-table thead th.col-pos { background: #f4f6fb; }
 
-.col-gnum { width: 2rem; min-width: 2rem; }
-.col-gpts { width: 2rem; min-width: 2rem; font-weight: 700; }
+.col-gnum { width: 1.4rem; max-width: 1.4rem; }
+.col-gpts { width: 1.4rem; max-width: 1.4rem; font-weight: 700; }
 
 .group-table td.col-gteam,
 .group-table th.col-gteam {
   text-align: left;
-  padding-left: 0.5rem;
-  white-space: nowrap;
-  position: sticky;
-  left: 2rem;
-  z-index: 1;
-  background: var(--c-card);
-  box-shadow: 2px 0 4px -2px rgba(0,0,0,0.12);
+  padding-left: 0.4rem;
 }
-.group-table thead th.col-gteam { background: #f4f6fb; }
 
 .grp-badge {
   display: inline-block;
