@@ -403,8 +403,6 @@ function renderLiveStats(ev) {
   const ph = Math.round(pWin  * 100);
   const pd = Math.round(pDraw * 100);
   const pa = Math.round(pLose * 100);
-  const xgHome = calcXg(ev.homeShotsOnTarget, ev.homeShots).toFixed(2);
-  const xgAway = calcXg(ev.awayShotsOnTarget, ev.awayShots).toFixed(2);
   const home = esc(ev.homeAbbr ?? "Local");
   const away = esc(ev.awayAbbr ?? "Visit.");
 
@@ -419,9 +417,6 @@ function renderLiveStats(ev) {
       <div class="prob-seg prob-win"  style="flex:${pWin.toFixed(4)}"></div>
       <div class="prob-seg prob-draw" style="flex:${pDraw.toFixed(4)}"></div>
       <div class="prob-seg prob-lose" style="flex:${pLose.toFixed(4)}"></div>
-    </div>
-    <div class="prob-3col prob-xg-row">
-      <span>${xgHome}</span><span>Est. xG</span><span>${xgAway}</span>
     </div>
   </div>`;
 }
