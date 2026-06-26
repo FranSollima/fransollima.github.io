@@ -630,8 +630,9 @@ function renderPartidos(groups, openKeys = new Set()) {
   };
 
   const activeHTML = active.map(renderCard).join("");
-  const pastHTML   = past.length
-    ? `<details class="past-matches-section">
+  const pastOpen = openKeys.has("__past__");
+  const pastHTML = past.length
+    ? `<details class="past-matches-section" data-key="__past__"${pastOpen ? " open" : ""}>
         <summary class="past-matches-header">Partidos anteriores (${past.length})</summary>
         ${past.map(renderCard).join("")}
       </details>`
