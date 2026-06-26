@@ -123,6 +123,17 @@ async function fetchESPN() {
   }
 }
 
+function parseRound(notes) {
+  const h = (notes?.[0]?.headline ?? "");
+  if (/round of 32/i.test(h))    return "Ronda de 32";
+  if (/round of 16/i.test(h))    return "Octavos de Final";
+  if (/quarter.?final/i.test(h)) return "Cuartos de Final";
+  if (/semi.?final/i.test(h))    return "Semifinales";
+  if (/third.?place/i.test(h))   return "Tercer Puesto";
+  if (/\bfinal\b/i.test(h))      return "Final";
+  return null;
+}
+
 function getStat(competitor, name) {
   const s = (competitor?.statistics ?? []).find(s => s.name === name);
   if (s == null) return null;
@@ -171,6 +182,7 @@ function parseESPN(data) {
         const a = ml.away?.current?.odds;
         return h && d && a ? { home: h, draw: d, away: a } : null;
       })(),
+      round: parseRound(comp.notes ?? event.notes ?? []),
     };
   }).filter(Boolean);
 }
@@ -422,7 +434,7 @@ function buildRanking(scored) {
   });
 }
 
-function groupByMatch(scored) {
+function groupByMatch(scored, events = []) {
   const groups = new Map();
   for (const s of scored) {
     const key = pairKey(s.abbr1 ?? s.equipo1, s.abbr2 ?? s.equipo2);
@@ -430,6 +442,14 @@ function groupByMatch(scored) {
       groups.set(key, { key, equipo1: s.equipo1, equipo2: s.equipo2, event: s.event, preds: [] });
     }
     groups.get(key).preds.push(s);
+  }
+
+  // Add knockout matches (have a round) that have no predictions yet
+  for (const ev of events) {
+    if (!ev.round) continue;
+    if (!groups.has(ev.id)) {
+      groups.set(ev.id, { key: ev.id, equipo1: ev.homeDisplay, equipo2: ev.awayDisplay, event: ev, preds: [] });
+    }
   }
   const todayAR = new Date().toLocaleDateString("en-CA", { timeZone: "America/Argentina/Buenos_Aires" });
   const pastDay = ev => ev?.date
@@ -567,11 +587,16 @@ function renderPartidos(groups, openKeys = new Set()) {
       </tr>`;
     }).join("");
 
+    const predSection = g.preds.length > 0
+      ? `<table class="pred-table"><tbody>${predRows}</tbody></table>`
+      : `<p class="empty no-preds">Sin predicciones cargadas</p>`;
+
     return `<details class="match-card" data-key="${esc(g.key)}" data-state="${esc(state)}"${openKeys.has(g.key) ? " open" : ""}>
       <summary class="match-header">
         <div class="match-teams">${esc(displayHome)} vs ${esc(displayAway)}</div>
         <div class="match-meta">
           ${badgeHTML(state)}
+          ${ev?.round ? `<span class="badge round">${esc(ev.round)}</span>` : ""}
           ${resultHTML}
           ${state === "in" ? `<span class="live-clock">${ev.statusName === "STATUS_HALFTIME" ? "Entretiempo" : esc(ev.displayClock)}</span>` : ""}
           <span class="match-date">${formatDate(ev?.date)}</span>
@@ -579,7 +604,7 @@ function renderPartidos(groups, openKeys = new Set()) {
         ${state === "in" ? '<div class="live-scan-bar"></div>' : ""}
       </summary>
       ${state === "in" ? renderLiveStats(ev) : ""}
-      <table class="pred-table"><tbody>${predRows}</tbody></table>
+      ${predSection}
     </details>`;
   }).join("");
 }
@@ -710,7 +735,7 @@ async function refresh() {
     const events  = await fetchESPN();
     const scored  = scoreAll(predicciones, events);
     const ranking = buildRanking(scored);
-    const groups  = groupByMatch(scored);
+    const groups  = groupByMatch(scored, events);
     const hasLive = events.some(ev => ev.state === "in");
 
     const prevOpen = new Set(
