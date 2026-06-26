@@ -659,7 +659,7 @@ function renderGroups(standings) {
       const gdStr = gd > 0 ? `+${gd}` : `${gd}`;
 
       let badge = "";
-      if (t.latestEv) {
+      if (t.latestEv && t.latestEv.state === "in") {
         const ev = t.latestEv;
         const hs = ev.homeScore ?? 0, as_ = ev.awayScore ?? 0;
         const myScore = ev.homeAbbr === t.abbr ? hs : as_;
