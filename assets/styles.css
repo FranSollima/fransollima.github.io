@@ -351,6 +351,27 @@ details[open].match-card > summary::after { content: "▴"; }
 .prob-draw { background: #bdbdbd; }
 .prob-lose { background: var(--c-accent); }
 
+.momentum-wrap {
+  margin-top: 0.75rem;
+  border-top: 1px solid #f0d0d5;
+  padding-top: 0.5rem;
+}
+.momentum-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.25rem;
+  font-size: 0.68rem;
+}
+.momentum-title {
+  color: #9e9e9e;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.momentum-team { font-weight: 600; }
+.momentum-team.home { color: var(--c-pts3); }
+.momentum-team.away { color: var(--c-accent); }
+
 .prob-xg-row span {
   font-size: 0.7rem;
   color: #6b7280;

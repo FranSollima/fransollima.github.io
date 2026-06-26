@@ -24,7 +24,8 @@ let displayMap         = null;
 let jugadoresMap       = null;
 let predicciones       = null;
 let groupStandingsData = null; // fetched once at init from ESPN standings endpoint
-const probsCache = new Map(); // ev.id → last valid { pWin, pDraw, pLose, source }
+const probsCache    = new Map(); // ev.id → last valid { pWin, pDraw, pLose, source }
+const momentumCache = new Map(); // ev.id → last valid { bars, goals }
 
 // ─── CSV PARSER ──────────────────────────────────────────────────────────────
 function parseCSV(text, sep = ";") {
@@ -395,6 +396,108 @@ function isValidProbs({ pWin, pDraw, pLose }) {
   return isFinite(pWin) && isFinite(pDraw) && isFinite(pLose);
 }
 
+// ─── MATCH MOMENTUM ──────────────────────────────────────────────────────────
+async function fetchSummary(eventId) {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 10_000);
+  try {
+    const res = await fetch(
+      `https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/summary?event=${eventId}`,
+      { cache: "no-store", signal: ctrl.signal }
+    );
+    if (!res.ok) return null;
+    return res.json();
+  } catch { return null; }
+  finally { clearTimeout(timer); }
+}
+
+function commentaryMinute(displayValue) {
+  const m = /^(\d+)/.exec(displayValue ?? "");
+  return m ? parseInt(m[1]) : -1;
+}
+
+function playWeight(typeId) {
+  if (typeId === "70")  return 6;   // gol
+  if (typeId === "106") return 3;   // tiro al arco
+  if (typeId === "117" || typeId === "135") return 1.8; // tiro afuera/bloqueado
+  if (typeId === "21")  return 1;   // corner
+  if (typeId === "41")  return 0.6; // gambeta
+  if (typeId === "8")   return 0.5; // offside
+  return 0;
+}
+
+function parseMomentum(data, ev) {
+  const plays = data?.commentary ?? [];
+  const map = new Map();
+  const goals = [];
+
+  for (const play of plays) {
+    const typeId  = String(play?.type?.id ?? "");
+    const minute  = commentaryMinute(play?.clock?.displayValue);
+    if (minute < 0) continue;
+    const w = playWeight(typeId);
+    if (w === 0) continue;
+
+    if (!map.has(minute)) map.set(minute, { home: 0, away: 0 });
+    const entry  = map.get(minute);
+    const isHome = play?.team?.displayName === ev.homeDisplay;
+    if (isHome) entry.home += w; else entry.away += w;
+
+    if (typeId === "70") goals.push({ minute, isHome });
+  }
+
+  const bars = [...map.entries()]
+    .sort((a, b) => a[0] - b[0])
+    .map(([minute, { home, away }]) => ({ minute, home, away }));
+
+  return { bars, goals };
+}
+
+function renderMomentum(ev) {
+  const cached = momentumCache.get(ev.id);
+  if (!cached || !cached.bars.length) return "";
+  const { bars, goals } = cached;
+
+  const maxMinute = Math.max(...bars.map(b => b.minute), 90);
+  const maxW      = Math.max(...bars.map(b => Math.max(b.home, b.away)), 1);
+  const H         = 28; // px por mitad
+  const totalH    = H * 2 + 2;
+
+  const pct  = min => ((min / maxMinute) * 100).toFixed(2);
+  const barW = Math.max(0.8, (100 / maxMinute * 1.2).toFixed(2));
+
+  const homeBars = bars.map(b => {
+    const h = ((b.home / maxW) * H).toFixed(2);
+    return `<rect x="${pct(b.minute)}%" y="${H - h}px" width="${barW}%" height="${h}px" fill="#1a7a3c" opacity="0.75" rx="1"/>`;
+  }).join("");
+
+  const awayBars = bars.map(b => {
+    const h = ((b.away / maxW) * H).toFixed(2);
+    return `<rect x="${pct(b.minute)}%" y="${H + 2}px" width="${barW}%" height="${h}px" fill="#bf0a30" opacity="0.75" rx="1"/>`;
+  }).join("");
+
+  const goalMarkers = goals.map(g =>
+    `<text x="${pct(g.minute)}%" y="${g.isHome ? H - 2 : H + totalH - H - 2}" text-anchor="middle" font-size="7">⚽</text>`
+  ).join("");
+
+  const home = esc(ev.homeAbbr ?? "Local");
+  const away = esc(ev.awayAbbr ?? "Visit.");
+
+  return `<div class="momentum-wrap">
+    <div class="momentum-header">
+      <span class="momentum-team home">${home}</span>
+      <span class="momentum-title">Momentum</span>
+      <span class="momentum-team away">${away}</span>
+    </div>
+    <svg width="100%" height="${totalH}" class="momentum-svg" style="display:block">
+      ${homeBars}
+      <line x1="0" y1="${H + 1}" x2="100%" y2="${H + 1}" stroke="#d4d9e3" stroke-width="1"/>
+      ${awayBars}
+      ${goalMarkers}
+    </svg>
+  </div>`;
+}
+
 function renderLiveStats(ev) {
   const fresh = calcMatchProbs(ev);
   if (fresh) probsCache.set(ev.id, fresh);
@@ -419,6 +522,7 @@ function renderLiveStats(ev) {
       <div class="prob-seg prob-draw" style="flex:${pDraw.toFixed(4)}"></div>
       <div class="prob-seg prob-lose" style="flex:${pLose.toFixed(4)}"></div>
     </div>
+    ${renderMomentum(ev)}
   </div>`;
 }
 
@@ -821,6 +925,13 @@ async function refresh() {
     const ranking = buildRanking(scored);
     const groups  = groupByMatch(scored, events);
     const hasLive = events.some(ev => ev.state === "in");
+
+    // Fetch summaries para partidos en vivo (en paralelo, sin bloquear el render)
+    const liveEvents = events.filter(ev => ev.state === "in");
+    await Promise.all(liveEvents.map(async ev => {
+      const data = await fetchSummary(ev.id);
+      if (data) momentumCache.set(ev.id, parseMomentum(data, ev));
+    }));
 
     const prevOpen = new Set(
       [...document.querySelectorAll('#partidos-container details[open]')].map(el => el.dataset.key)
