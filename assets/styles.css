@@ -356,7 +356,7 @@ details[open].match-card > summary::after { content: "▴"; }
   background: var(--c-card);
   border: 1px solid var(--c-border);
   border-radius: 10px;
-  overflow: hidden;
+  overflow-x: auto;
   box-shadow: 0 1px 4px rgba(0,0,0,0.06);
 }
 
@@ -373,6 +373,7 @@ details[open].match-card > summary::after { content: "▴"; }
 
 .group-table {
   width: 100%;
+  min-width: 520px;
   border-collapse: collapse;
 }
 
@@ -407,9 +408,6 @@ details[open].match-card > summary::after { content: "▴"; }
   text-align: left;
   padding-left: 0.5rem;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 140px;
 }
 
 .grp-badge {
