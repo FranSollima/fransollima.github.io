@@ -786,15 +786,35 @@ function hideError() {
 }
 
 // ─── TABS ─────────────────────────────────────────────────────────────────────
+function switchTab(tabName) {
+  document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+  document.querySelectorAll(".tab-panel").forEach(p => p.classList.remove("active"));
+  document.querySelector(`.tab[data-tab="${tabName}"]`)?.classList.add("active");
+  document.getElementById(`tab-${tabName}`)?.classList.add("active");
+}
+
 function initTabs() {
-  document.querySelectorAll(".tab").forEach(btn => {
-    btn.addEventListener("click", () => {
-      document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
-      document.querySelectorAll(".tab-panel").forEach(p => p.classList.remove("active"));
-      btn.classList.add("active");
-      document.getElementById(`tab-${btn.dataset.tab}`)?.classList.add("active");
-    });
+  const tabs = [...document.querySelectorAll(".tab")];
+  tabs.forEach(btn => {
+    btn.addEventListener("click", () => switchTab(btn.dataset.tab));
   });
+
+  // Swipe para cambiar de tab en mobile
+  const container = document.querySelector("main");
+  if (!container) return;
+  let x0 = null;
+  container.addEventListener("touchstart", e => { x0 = e.touches[0].clientX; }, { passive: true });
+  container.addEventListener("touchend", e => {
+    if (x0 === null) return;
+    const dx = e.changedTouches[0].clientX - x0;
+    x0 = null;
+    if (Math.abs(dx) < 50) return; // umbral mínimo
+    const names  = tabs.map(t => t.dataset.tab);
+    const active = document.querySelector(".tab.active")?.dataset.tab;
+    const idx    = names.indexOf(active);
+    if (dx < 0 && idx < names.length - 1) switchTab(names[idx + 1]); // swipe izquierda → siguiente
+    if (dx > 0 && idx > 0)                switchTab(names[idx - 1]); // swipe derecha → anterior
+  }, { passive: true });
 }
 
 // ─── INIT ─────────────────────────────────────────────────────────────────────
