@@ -511,13 +511,15 @@ function ptsClass(pts, estado) {
 function renderRanking(ranking, hasLive, jugMap) {
   if (!ranking.length) return '<p class="empty">No hay datos aún.</p>';
 
+  const liveDot = hasLive ? ' <span class="live-dot" title="Hay partidos en vivo"></span>' : "";
+
   let html = `<table class="ranking-table">
     <thead><tr>
       <th class="col-rank">#</th>
       <th class="col-name">Jugador</th>
       <th class="col-num" title="Marcador exacto = 3 pts">Exactos</th>
       <th class="col-num" title="Resultado correcto = 1 pt">Result.</th>
-      <th class="col-total">Total</th>
+      <th class="col-total">Total${liveDot}</th>
     </tr></thead><tbody>`;
 
   let displayRank = 1;
@@ -529,15 +531,12 @@ function renderRanking(ranking, hasLive, jugMap) {
     const tied = i > 0 && total === prevTotal && r.resultados === prev.resultados;
     if (i > 0 && !tied) displayRank = i + 1;
     const nombre = jugMap?.get(r.jugador) ?? r.jugador;
-    const totalHTML = r.ptsLive > 0
-      ? `${r.ptsPost} <span class="pts-live">(+${r.ptsLive})</span>`
-      : `${r.ptsPost}`;
     html += `<tr>
       <td class="col-rank">${displayRank}</td>
       <td class="col-name">${esc(nombre)}</td>
       <td class="col-num">${r.exactos}</td>
       <td class="col-num">${r.resultados}</td>
-      <td class="col-total">${totalHTML}</td>
+      <td class="col-total">${total}</td>
     </tr>`;
   }
   html += "</tbody></table>";
@@ -808,15 +807,35 @@ function hideError() {
 }
 
 // ─── TABS ─────────────────────────────────────────────────────────────────────
+function switchTab(tabName) {
+  document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+  document.querySelectorAll(".tab-panel").forEach(p => p.classList.remove("active"));
+  document.querySelector(`.tab[data-tab="${tabName}"]`)?.classList.add("active");
+  document.getElementById(`tab-${tabName}`)?.classList.add("active");
+}
+
 function initTabs() {
-  document.querySelectorAll(".tab").forEach(btn => {
-    btn.addEventListener("click", () => {
-      document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
-      document.querySelectorAll(".tab-panel").forEach(p => p.classList.remove("active"));
-      btn.classList.add("active");
-      document.getElementById(`tab-${btn.dataset.tab}`)?.classList.add("active");
-    });
+  const tabs = [...document.querySelectorAll(".tab")];
+  tabs.forEach(btn => {
+    btn.addEventListener("click", () => switchTab(btn.dataset.tab));
   });
+
+  // Swipe para cambiar de tab en mobile
+  const container = document.querySelector("main");
+  if (!container) return;
+  let x0 = null;
+  container.addEventListener("touchstart", e => { x0 = e.touches[0].clientX; }, { passive: true });
+  container.addEventListener("touchend", e => {
+    if (x0 === null) return;
+    const dx = e.changedTouches[0].clientX - x0;
+    x0 = null;
+    if (Math.abs(dx) < 50) return; // umbral mínimo
+    const names  = tabs.map(t => t.dataset.tab);
+    const active = document.querySelector(".tab.active")?.dataset.tab;
+    const idx    = names.indexOf(active);
+    if (dx < 0 && idx < names.length - 1) switchTab(names[idx + 1]); // swipe izquierda → siguiente
+    if (dx > 0 && idx > 0)                switchTab(names[idx - 1]); // swipe derecha → anterior
+  }, { passive: true });
 }
 
 // ─── INIT ─────────────────────────────────────────────────────────────────────
