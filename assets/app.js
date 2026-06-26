@@ -140,6 +140,16 @@ function parseESPN(data) {
       id:          event.id,
       date:        event.date,
       name:        event.name,
+      groupName: (() => {
+        const allNotes = [...(comp.notes ?? []), ...(event.notes ?? [])];
+        for (const note of allNotes) {
+          const text = String(note.text ?? note.value ?? note.headline ?? "");
+          const m = text.match(/Group\s+([A-L])/i);
+          if (m) return `Grupo ${m[1].toUpperCase()}`;
+        }
+        const m = String(event.name ?? "").match(/Group\s+([A-L])/i);
+        return m ? `Grupo ${m[1].toUpperCase()}` : null;
+      })(),
       homeAbbr:    home?.team?.abbreviation?.toUpperCase() ?? null,
       awayAbbr:    away?.team?.abbreviation?.toUpperCase() ?? null,
       homeDisplay: home?.team?.displayName ?? "",
@@ -522,6 +532,114 @@ function renderPartidos(groups, openKeys = new Set()) {
   }).join("");
 }
 
+// ─── GROUP STANDINGS ─────────────────────────────────────────────────────────
+function buildGroupStandings(events) {
+  const groups = new Map();
+
+  const getTeam = (grpName, abbr, display) => {
+    if (!groups.has(grpName)) groups.set(grpName, new Map());
+    const grp = groups.get(grpName);
+    if (!grp.has(abbr)) {
+      grp.set(abbr, { abbr, display, pj: 0, pg: 0, pe: 0, pp: 0, gf: 0, ga: 0, pts: 0, latestEv: null });
+    }
+    return grp.get(abbr);
+  };
+
+  // Register all teams (including pre-match events so they show with 0 stats)
+  for (const ev of events) {
+    if (!ev.homeAbbr || !ev.awayAbbr || !ev.groupName) continue;
+    getTeam(ev.groupName, ev.homeAbbr, ev.homeDisplay);
+    getTeam(ev.groupName, ev.awayAbbr, ev.awayDisplay);
+  }
+
+  // Accumulate results from played/live matches
+  for (const ev of events) {
+    if (!ev.homeAbbr || !ev.awayAbbr || !ev.groupName) continue;
+    if (ev.state !== "in" && ev.state !== "post") continue;
+
+    const grp = groups.get(ev.groupName);
+    if (!grp) continue;
+    const hs = ev.homeScore ?? 0, as_ = ev.awayScore ?? 0;
+
+    const update = (abbr, gf, ga) => {
+      const t = grp.get(abbr);
+      if (!t) return;
+      t.pj++; t.gf += gf; t.ga += ga;
+      if (gf > ga)        { t.pg++; t.pts += 3; }
+      else if (gf === ga) { t.pe++; t.pts += 1; }
+      else                { t.pp++; }
+      if (!t.latestEv || ev.state === "in" || ev.date > t.latestEv.date) t.latestEv = ev;
+    };
+    update(ev.homeAbbr, hs, as_);
+    update(ev.awayAbbr, as_, hs);
+  }
+
+  return [...groups.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([name, teamsMap]) => ({
+      name,
+      teams: [...teamsMap.values()].sort((a, b) => {
+        if (b.pts !== a.pts) return b.pts - a.pts;
+        const gdA = a.gf - a.ga, gdB = b.gf - b.ga;
+        if (gdB !== gdA) return gdB - gdA;
+        if (b.gf !== a.gf) return b.gf - a.gf;
+        const na = displayMap?.get(a.abbr) ?? a.display ?? a.abbr;
+        const nb = displayMap?.get(b.abbr) ?? b.display ?? b.abbr;
+        return na.localeCompare(nb, "es");
+      }),
+    }));
+}
+
+function renderGroups(standings) {
+  if (!standings.length) return '<p class="empty">Datos de grupos no disponibles aún.</p>';
+
+  return standings.map(({ name, teams }) => {
+    const rows = teams.map((t, i) => {
+      const display = displayMap?.get(t.abbr) ?? t.display ?? t.abbr;
+      const gd = t.gf - t.ga;
+      const gdStr = gd > 0 ? `+${gd}` : `${gd}`;
+
+      let badge = "";
+      if (t.latestEv) {
+        const ev = t.latestEv;
+        badge = `<span class="grp-badge ${ev.state}">${ev.homeScore ?? 0}-${ev.awayScore ?? 0}</span>`;
+      }
+
+      return `<tr${i < 2 ? ' class="qualif"' : ""}>
+        <td class="col-pos">${i + 1}</td>
+        <td class="col-gteam">${esc(display)}${badge}</td>
+        <td class="col-gnum">${t.pj}</td>
+        <td class="col-gnum">${t.pg}</td>
+        <td class="col-gnum">${t.pe}</td>
+        <td class="col-gnum">${t.pp}</td>
+        <td class="col-gpts">${t.pts}</td>
+        <td class="col-gnum">${t.gf}</td>
+        <td class="col-gnum">${t.ga}</td>
+        <td class="col-gnum">${gdStr}</td>
+      </tr>`;
+    }).join("");
+
+    return `<div class="group-block">
+      <h3 class="group-title">${esc(name)}</h3>
+      <table class="group-table">
+        <thead><tr>
+          <th class="col-pos">#</th>
+          <th class="col-gteam">Equipo</th>
+          <th class="col-gnum" title="Partidos jugados">PJ</th>
+          <th class="col-gnum" title="Ganados">G</th>
+          <th class="col-gnum" title="Empatados">E</th>
+          <th class="col-gnum" title="Perdidos">P</th>
+          <th class="col-gpts" title="Puntos">Pts</th>
+          <th class="col-gnum" title="Goles a favor">GF</th>
+          <th class="col-gnum" title="Goles en contra">GC</th>
+          <th class="col-gnum" title="Diferencia de goles">DG</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
+  }).join("");
+}
+
 // ─── REFRESH / POLLING ────────────────────────────────────────────────────────
 async function refresh() {
   hideError();
@@ -540,9 +658,11 @@ async function refresh() {
       ? prevOpen
       : new Set(groups.filter(g => g.event?.state === "in").map(g => g.key));
 
+    const standings = buildGroupStandings(events);
     const scrollY = window.scrollY;
     document.getElementById("ranking-container").innerHTML  = renderRanking(ranking, hasLive, jugadoresMap);
     document.getElementById("partidos-container").innerHTML = renderPartidos(groups, openKeys);
+    document.getElementById("grupos-container").innerHTML   = renderGroups(standings);
     window.scrollTo(0, scrollY);
 
 
