@@ -356,8 +356,12 @@ details[open].match-card > summary::after { content: "▴"; }
   background: var(--c-card);
   border: 1px solid var(--c-border);
   border-radius: 10px;
-  overflow-x: auto;
+  overflow: hidden;
   box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+}
+
+.group-table-wrap {
+  overflow-x: auto;
 }
 
 .group-title {

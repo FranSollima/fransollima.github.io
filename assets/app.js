@@ -684,7 +684,7 @@ function renderGroups(standings) {
 
     return `<div class="group-block">
       <h3 class="group-title">${esc(name)}</h3>
-      <table class="group-table">
+      <div class="group-table-wrap"><table class="group-table">
         <thead><tr>
           <th class="col-pos">#</th>
           <th class="col-gteam">Equipo</th>
@@ -698,7 +698,7 @@ function renderGroups(standings) {
           <th class="col-gnum" title="Diferencia de goles">DG</th>
         </tr></thead>
         <tbody>${rows}</tbody>
-      </table>
+      </table></div>
     </div>`;
   }).join("");
 }
