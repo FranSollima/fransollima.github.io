@@ -511,13 +511,15 @@ function ptsClass(pts, estado) {
 function renderRanking(ranking, hasLive, jugMap) {
   if (!ranking.length) return '<p class="empty">No hay datos aún.</p>';
 
+  const liveDot = hasLive ? ' <span class="live-dot" title="Hay partidos en vivo"></span>' : "";
+
   let html = `<table class="ranking-table">
     <thead><tr>
       <th class="col-rank">#</th>
       <th class="col-name">Jugador</th>
       <th class="col-num" title="Marcador exacto = 3 pts">Exactos</th>
       <th class="col-num" title="Resultado correcto = 1 pt">Result.</th>
-      <th class="col-total">Total</th>
+      <th class="col-total">Total${liveDot}</th>
     </tr></thead><tbody>`;
 
   let displayRank = 1;
@@ -529,15 +531,12 @@ function renderRanking(ranking, hasLive, jugMap) {
     const tied = i > 0 && total === prevTotal && r.resultados === prev.resultados;
     if (i > 0 && !tied) displayRank = i + 1;
     const nombre = jugMap?.get(r.jugador) ?? r.jugador;
-    const totalHTML = r.ptsLive > 0
-      ? `${r.ptsPost} <span class="pts-live">(+${r.ptsLive})</span>`
-      : `${r.ptsPost}`;
     html += `<tr>
       <td class="col-rank">${displayRank}</td>
       <td class="col-name">${esc(nombre)}</td>
       <td class="col-num">${r.exactos}</td>
       <td class="col-num">${r.resultados}</td>
-      <td class="col-total">${totalHTML}</td>
+      <td class="col-total">${total}</td>
     </tr>`;
   }
   html += "</tbody></table>";

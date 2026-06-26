@@ -156,6 +156,21 @@ header h1 {
 .prov-note { font-size: 0.72rem; color: var(--c-pts1); padding: 0.4rem 0.75rem; }
 .pts-live  { color: var(--c-pts1); font-size: 0.82em; font-weight: 400; }
 
+.live-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--c-accent);
+  margin-left: 4px;
+  vertical-align: middle;
+  animation: pulse-dot 1.4s ease-in-out infinite;
+}
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.4; transform: scale(0.7); }
+}
+
 /* ── Match cards ────────────────────────────────────────── */
 #partidos-container { padding: 0.8rem; display: flex; flex-direction: column; gap: 0.6rem; }
 
