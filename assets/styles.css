@@ -48,9 +48,9 @@ body {
 
 /* ── Header ─────────────────────────────────────────────── */
 header {
-  background: linear-gradient(135deg, #001540 0%, var(--c-primary) 100%);
+  background: #ffffff;
   border-bottom: 3px solid var(--c-gold);
-  color: #fff;
+  color: var(--c-primary);
   padding: 0.75rem 1rem;
   display: flex;
   justify-content: space-between;
@@ -90,8 +90,8 @@ header h1 {
 /* ── Tabs ───────────────────────────────────────────────── */
 .tabs {
   display: flex;
-  background: var(--c-card);
-  border-bottom: 2px solid var(--c-border);
+  background: var(--c-primary);
+  border-bottom: 2px solid var(--c-primary);
   position: sticky;
   top: 0;
   z-index: 10;
@@ -106,14 +106,14 @@ header h1 {
   background: none;
   cursor: pointer;
   font-size: 0.88rem;
-  color: #757575;
+  color: rgba(255,255,255,0.65);
   font-weight: 500;
   letter-spacing: 0.02em;
   transition: color 0.15s;
 }
 .tab.active {
-  color: var(--c-primary);
-  border-bottom-color: var(--c-accent);
+  color: #ffffff;
+  border-bottom-color: var(--c-gold);
   font-weight: 700;
 }
 
