@@ -398,10 +398,19 @@ details[open].match-card > summary::after { content: "▴"; }
   border-left: 3px solid var(--c-primary);
 }
 
-.col-pos   { width: 1.6rem; color: #9e9e9e; }
-.col-gteam { text-align: left; padding-left: 0.5rem; }
-.col-gnum  { width: 2rem; }
-.col-gpts  { width: 2rem; font-weight: 700; }
+.col-pos  { width: 1.6rem; color: #9e9e9e; }
+.col-gnum { width: 2rem; }
+.col-gpts { width: 2rem; font-weight: 700; }
+
+.group-table td.col-gteam,
+.group-table th.col-gteam {
+  text-align: left;
+  padding-left: 0.5rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 140px;
+}
 
 .grp-badge {
   display: inline-block;
@@ -413,5 +422,6 @@ details[open].match-card > summary::after { content: "▴"; }
   vertical-align: middle;
   letter-spacing: 0.02em;
 }
-.grp-badge.post { background: #e8eaf2; color: #5c6580; }
-.grp-badge.in   { background: var(--c-accent); color: #fff; }
+.grp-badge.win  { background: #e6f4ea; color: var(--c-pts3); }
+.grp-badge.draw { background: #e8eaf2; color: #5c6580; }
+.grp-badge.loss { background: #fce8ec; color: var(--c-accent); }

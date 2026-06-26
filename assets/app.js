@@ -661,7 +661,11 @@ function renderGroups(standings) {
       let badge = "";
       if (t.latestEv) {
         const ev = t.latestEv;
-        badge = `<span class="grp-badge ${ev.state}">${ev.homeScore ?? 0}-${ev.awayScore ?? 0}</span>`;
+        const hs = ev.homeScore ?? 0, as_ = ev.awayScore ?? 0;
+        const myScore = ev.homeAbbr === t.abbr ? hs : as_;
+        const opScore = ev.homeAbbr === t.abbr ? as_ : hs;
+        const rc = myScore > opScore ? "win" : myScore < opScore ? "loss" : "draw";
+        badge = `<span class="grp-badge ${rc}">${hs}-${as_}</span>`;
       }
 
       return `<tr${i < 2 ? ' class="qualif"' : ""}>
