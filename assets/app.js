@@ -527,10 +527,12 @@ function renderRanking(ranking, hasLive, jugMap) {
 
   let displayRank = 1;
   for (let i = 0; i < ranking.length; i++) {
-    const r = ranking[i];
-    const total = r.ptsPost + r.ptsLive;
-    const prevTotal = i > 0 ? ranking[i - 1].ptsPost + ranking[i - 1].ptsLive : null;
-    if (i > 0 && total < prevTotal) displayRank = i + 1;
+    const r    = ranking[i];
+    const prev = ranking[i - 1];
+    const total     = r.ptsPost + r.ptsLive;
+    const prevTotal = prev ? prev.ptsPost + prev.ptsLive : null;
+    const tied = i > 0 && total === prevTotal && r.resultados === prev.resultados;
+    if (i > 0 && !tied) displayRank = i + 1;
     const nombre = jugMap?.get(r.jugador) ?? r.jugador;
     const totalHTML = r.ptsLive > 0
       ? `${r.ptsPost} <span class="pts-live">(+${r.ptsLive})</span>`
