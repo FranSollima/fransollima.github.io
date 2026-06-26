@@ -18,6 +18,7 @@ const POLL_IDLE_MS = 60_000;   // 1 min — no hay partidos en vivo
 
 // ─── STATE ───────────────────────────────────────────────────────────────────
 let pollTimer          = null;
+let firstRender        = true;
 let equiposMap         = null;
 let displayMap         = null;
 let jugadoresMap       = null;
@@ -736,7 +737,6 @@ function renderThirdPlaces(standings) {
 
   return `<div class="group-block thirds-block">
     <h3 class="group-title">Mejores Terceros</h3>
-    <p class="thirds-note">Ordenados por Pts → DG → GF (criterio simplificado)</p>
     <div class="group-table-wrap"><table class="group-table">
       <thead><tr>
         <th class="col-pos">#</th>
@@ -756,7 +756,7 @@ function renderThirdPlaces(standings) {
 function renderGroups(standings) {
   if (!standings.length) return '<p class="empty">Datos de grupos no disponibles aún.</p>';
 
-  return renderThirdPlaces(standings) + standings.map(({ name, teams }) => {
+  return standings.map(({ name, teams }) => {
     const rows = teams.map((t, i) => {
       const display = displayMap?.get(t.abbr) ?? t.display ?? t.abbr;
       const gd = t.gf - t.ga;
@@ -800,7 +800,7 @@ function renderGroups(standings) {
         <tbody>${rows}</tbody>
       </table></div>
     </div>`;
-  }).join("");
+  }).join("") + renderThirdPlaces(standings);
 }
 
 // ─── REFRESH / POLLING ────────────────────────────────────────────────────────
@@ -816,10 +816,11 @@ async function refresh() {
     const prevOpen = new Set(
       [...document.querySelectorAll('#partidos-container details[open]')].map(el => el.dataset.key)
     );
-    // First render: auto-open live matches; subsequent renders: preserve user state
-    const openKeys = prevOpen.size > 0
-      ? prevOpen
-      : new Set(groups.filter(g => g.event?.state === "in").map(g => g.key));
+    // Primera carga: auto-abrir partidos en vivo; después preservar estado del usuario
+    const openKeys = firstRender
+      ? new Set(groups.filter(g => g.event?.state === "in").map(g => g.key))
+      : prevOpen;
+    firstRender = false;
 
     const standings = buildGroupStandings(events, groupStandingsData);
     const scrollY = window.scrollY;
@@ -865,22 +866,6 @@ function initTabs() {
     btn.addEventListener("click", () => switchTab(btn.dataset.tab));
   });
 
-  // Swipe para cambiar de tab en mobile
-  const container = document.querySelector("main");
-  if (!container) return;
-  let x0 = null;
-  container.addEventListener("touchstart", e => { x0 = e.touches[0].clientX; }, { passive: true });
-  container.addEventListener("touchend", e => {
-    if (x0 === null) return;
-    const dx = e.changedTouches[0].clientX - x0;
-    x0 = null;
-    if (Math.abs(dx) < 50) return; // umbral mínimo
-    const names  = tabs.map(t => t.dataset.tab);
-    const active = document.querySelector(".tab.active")?.dataset.tab;
-    const idx    = names.indexOf(active);
-    if (dx < 0 && idx < names.length - 1) switchTab(names[idx + 1]); // swipe izquierda → siguiente
-    if (dx > 0 && idx > 0)                switchTab(names[idx - 1]); // swipe derecha → anterior
-  }, { passive: true });
 }
 
 // ─── INIT ─────────────────────────────────────────────────────────────────────
