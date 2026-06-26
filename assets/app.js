@@ -704,10 +704,59 @@ function buildGroupStandings(events, baseStandings) {
   return result;
 }
 
+function renderThirdPlaces(standings) {
+  const thirds = standings
+    .filter(({ teams }) => teams.length >= 3)
+    .map(({ name, teams }) => ({ group: name, ...teams[2] }))
+    .sort((a, b) => {
+      if (b.pts !== a.pts) return b.pts - a.pts;
+      const gdA = a.gf - a.ga, gdB = b.gf - b.ga;
+      if (gdB !== gdA) return gdB - gdA;
+      return b.gf - a.gf;
+    });
+
+  if (!thirds.length) return "";
+
+  const rows = thirds.map((t, i) => {
+    const display = displayMap?.get(t.abbr) ?? t.display ?? t.abbr;
+    const gd = t.gf - t.ga;
+    const gdStr = gd > 0 ? `+${gd}` : `${gd}`;
+    const qualif = i < 8; // top 8 terceros avanzan en un Mundial de 48 equipos
+    return `<tr${qualif ? ' class="qualif"' : ""}>
+      <td class="col-pos">${i + 1}</td>
+      <td class="col-gteam">${esc(display)} <span class="third-group">${esc(t.group)}</span></td>
+      <td class="col-gnum">${t.pj}</td>
+      <td class="col-gnum">${t.pg}</td>
+      <td class="col-gnum">${t.pe}</td>
+      <td class="col-gnum">${t.pp}</td>
+      <td class="col-gpts">${t.pts}</td>
+      <td class="col-goles">${t.gf} - ${t.ga}</td>
+    </tr>`;
+  }).join("");
+
+  return `<div class="group-block thirds-block">
+    <h3 class="group-title">Mejores Terceros</h3>
+    <p class="thirds-note">Ordenados por Pts → DG → GF (criterio simplificado)</p>
+    <div class="group-table-wrap"><table class="group-table">
+      <thead><tr>
+        <th class="col-pos">#</th>
+        <th class="col-gteam">Equipo</th>
+        <th class="col-gnum" title="Partidos jugados">PJ</th>
+        <th class="col-gnum" title="Ganados">G</th>
+        <th class="col-gnum" title="Empatados">E</th>
+        <th class="col-gnum" title="Perdidos">P</th>
+        <th class="col-gpts" title="Puntos">Pts</th>
+        <th class="col-goles" title="Goles a favor - Goles en contra">GF - GC</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table></div>
+  </div>`;
+}
+
 function renderGroups(standings) {
   if (!standings.length) return '<p class="empty">Datos de grupos no disponibles aún.</p>';
 
-  return standings.map(({ name, teams }) => {
+  return renderThirdPlaces(standings) + standings.map(({ name, teams }) => {
     const rows = teams.map((t, i) => {
       const display = displayMap?.get(t.abbr) ?? t.display ?? t.abbr;
       const gd = t.gf - t.ga;
