@@ -268,7 +268,8 @@ function calcMatchProbs(ev) {
     };
     const total = raw.home + raw.draw + raw.away;
     const r = { pWin: raw.home / total, pDraw: raw.draw / total, pLose: raw.away / total, source: "odds" };
-    return isValidProbs(r) ? r : null;
+    if (isValidProbs(r)) return r;
+    // odds malformados → fall through al modelo Poisson
   }
 
   // Fallback: Poisson model from shots + possession
@@ -374,11 +375,11 @@ function groupByMatch(scored) {
     : 0;
 
   return [...groups.values()].sort((a, b) => {
-    const pa = pastDay(a.event), pb = pastDay(b.event);
-    if (pa !== pb) return pa - pb;
     const inA = a.event?.state === "in" ? 0 : 1;
     const inB = b.event?.state === "in" ? 0 : 1;
     if (inA !== inB) return inA - inB;
+    const pa = pastDay(a.event), pb = pastDay(b.event);
+    if (pa !== pb) return pa - pb;
     const da = a.event?.date ?? "9999";
     const db = b.event?.date ?? "9999";
     return da < db ? -1 : da > db ? 1 : 0;
