@@ -159,6 +159,34 @@ header h1 {
 /* ── Match cards ────────────────────────────────────────── */
 #partidos-container { padding: 0.8rem; display: flex; flex-direction: column; gap: 0.6rem; }
 
+.past-matches-section {
+  border: 1px solid var(--c-border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.past-matches-header {
+  list-style: none;
+  cursor: pointer;
+  padding: 0.75rem 1rem;
+  background: var(--c-bg);
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #555;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.past-matches-header::-webkit-details-marker { display: none; }
+.past-matches-header::before { content: "▾"; font-size: 0.75rem; }
+details[open].past-matches-section > .past-matches-header::before { content: "▴"; }
+.past-matches-section .match-card {
+  border-radius: 0;
+  border-left: none;
+  border-right: none;
+  border-top: none;
+}
+.past-matches-section .match-card:last-child { border-bottom: none; }
+
 .match-card {
   background: var(--c-card);
   border: 1px solid var(--c-border);

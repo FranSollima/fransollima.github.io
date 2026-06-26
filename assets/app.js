@@ -550,7 +550,18 @@ function renderRanking(ranking, hasLive, jugMap) {
 function renderPartidos(groups, openKeys = new Set()) {
   if (!groups.length) return '<p class="empty">No hay predicciones cargadas.</p>';
 
-  return groups.map(g => {
+  const todayAR = new Date().toLocaleDateString("en-CA", { timeZone: "America/Argentina/Buenos_Aires" });
+  const isPast = g => g.event?.state === "post"
+    && g.event?.date
+    && new Date(g.event.date).toLocaleDateString("en-CA", { timeZone: "America/Argentina/Buenos_Aires" }) < todayAR;
+
+  const active = groups.filter(g => !isPast(g));
+  const past   = [...groups.filter(isPast)].sort((a, b) => {
+    const da = a.event?.date ?? "0", db = b.event?.date ?? "0";
+    return da < db ? 1 : da > db ? -1 : 0; // más reciente primero
+  });
+
+  const renderCard = g => {
     const ev    = g.event;
     const state = ev?.state ?? "no_encontrado";
 
@@ -619,7 +630,17 @@ function renderPartidos(groups, openKeys = new Set()) {
       ${state === "in" ? renderLiveStats(ev) : ""}
       ${predSection}
     </details>`;
-  }).join("");
+  };
+
+  const activeHTML = active.map(renderCard).join("");
+  const pastHTML   = past.length
+    ? `<details class="past-matches-section">
+        <summary class="past-matches-header">Partidos anteriores (${past.length})</summary>
+        ${past.map(renderCard).join("")}
+      </details>`
+    : "";
+
+  return activeHTML + pastHTML;
 }
 
 // ─── GROUP STANDINGS ─────────────────────────────────────────────────────────
