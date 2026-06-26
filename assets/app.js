@@ -731,9 +731,7 @@ function renderGroups(standings) {
         <td class="col-gnum">${t.pe}</td>
         <td class="col-gnum">${t.pp}</td>
         <td class="col-gpts">${t.pts}</td>
-        <td class="col-gnum">${t.gf}</td>
-        <td class="col-gnum">${t.ga}</td>
-        <td class="col-gnum">${gdStr}</td>
+        <td class="col-goles">${t.gf} - ${t.ga}</td>
       </tr>`;
     }).join("");
 
@@ -748,9 +746,7 @@ function renderGroups(standings) {
           <th class="col-gnum" title="Empatados">E</th>
           <th class="col-gnum" title="Perdidos">P</th>
           <th class="col-gpts" title="Puntos">Pts</th>
-          <th class="col-gnum" title="Goles a favor">GF</th>
-          <th class="col-gnum" title="Goles en contra">GC</th>
-          <th class="col-gnum" title="Diferencia de goles">DG</th>
+          <th class="col-goles" title="Goles a favor - Goles en contra">GF - GC</th>
         </tr></thead>
         <tbody>${rows}</tbody>
       </table></div>
