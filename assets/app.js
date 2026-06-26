@@ -403,8 +403,6 @@ function renderLiveStats(ev) {
   const ph = Math.round(pWin  * 100);
   const pd = Math.round(pDraw * 100);
   const pa = Math.round(pLose * 100);
-  const xgHome = calcXg(ev.homeShotsOnTarget, ev.homeShots).toFixed(2);
-  const xgAway = calcXg(ev.awayShotsOnTarget, ev.awayShots).toFixed(2);
   const home = esc(ev.homeAbbr ?? "Local");
   const away = esc(ev.awayAbbr ?? "Visit.");
 
@@ -419,9 +417,6 @@ function renderLiveStats(ev) {
       <div class="prob-seg prob-win"  style="flex:${pWin.toFixed(4)}"></div>
       <div class="prob-seg prob-draw" style="flex:${pDraw.toFixed(4)}"></div>
       <div class="prob-seg prob-lose" style="flex:${pLose.toFixed(4)}"></div>
-    </div>
-    <div class="prob-3col prob-xg-row">
-      <span>${xgHome}</span><span>Est. xG</span><span>${xgAway}</span>
     </div>
   </div>`;
 }
@@ -527,10 +522,12 @@ function renderRanking(ranking, hasLive, jugMap) {
 
   let displayRank = 1;
   for (let i = 0; i < ranking.length; i++) {
-    const r = ranking[i];
-    const total = r.ptsPost + r.ptsLive;
-    const prevTotal = i > 0 ? ranking[i - 1].ptsPost + ranking[i - 1].ptsLive : null;
-    if (i > 0 && total < prevTotal) displayRank = i + 1;
+    const r    = ranking[i];
+    const prev = ranking[i - 1];
+    const total     = r.ptsPost + r.ptsLive;
+    const prevTotal = prev ? prev.ptsPost + prev.ptsLive : null;
+    const tied = i > 0 && total === prevTotal && r.resultados === prev.resultados;
+    if (i > 0 && !tied) displayRank = i + 1;
     const nombre = jugMap?.get(r.jugador) ?? r.jugador;
     const totalHTML = r.ptsLive > 0
       ? `${r.ptsPost} <span class="pts-live">(+${r.ptsLive})</span>`
