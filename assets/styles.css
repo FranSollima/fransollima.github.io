@@ -156,6 +156,19 @@ header h1 {
 .prov-note { font-size: 0.72rem; color: var(--c-pts1); padding: 0.4rem 0.75rem; }
 .pts-live  { color: var(--c-pts1); font-size: 0.82em; font-weight: 400; }
 
+.ranking-live-note {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.6rem;
+  padding: 0.55rem 0.85rem;
+  background: var(--c-card);
+  border: 1px solid var(--c-border);
+  border-radius: 8px;
+  font-size: 0.78rem;
+  color: #555;
+}
+
 .live-dot {
   display: inline-block;
   width: 6px;

@@ -541,6 +541,14 @@ function renderRanking(ranking, hasLive, jugMap) {
     </tr>`;
   }
   html += "</tbody></table>";
+
+  if (hasLive) {
+    html += `<div class="ranking-live-note">
+      <span class="live-dot"></span>
+      Los puntos reflejan resultados en vivo y pueden cambiar hasta que termine el partido.
+    </div>`;
+  }
+
   return html;
 }
 
