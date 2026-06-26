@@ -443,7 +443,7 @@ function buildRanking(scored) {
   return [...map.values()].sort((a, b) => {
     const ta = a.ptsPost + a.ptsLive;
     const tb = b.ptsPost + b.ptsLive;
-    return tb - ta || b.exactos - a.exactos || a.jugador.localeCompare(b.jugador);
+    return tb - ta || b.exactos - a.exactos || b.resultados - a.resultados;
   });
 }
 
