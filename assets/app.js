@@ -10,15 +10,19 @@ const ESPN_URL =
   "https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard" +
   "?limit=200&dates=20260611-20260719";
 
+const ESPN_STANDINGS_URL =
+  "https://site.api.espn.com/apis/v2/sports/soccer/fifa.world/standings";
+
 const POLL_LIVE_MS = 10_000;   // 10 s — hay al menos un partido en vivo
 const POLL_IDLE_MS = 60_000;   // 1 min — no hay partidos en vivo
 
 // ─── STATE ───────────────────────────────────────────────────────────────────
-let pollTimer    = null;
-let equiposMap   = null;
-let displayMap   = null;
-let jugadoresMap = null;
-let predicciones = null;
+let pollTimer          = null;
+let equiposMap         = null;
+let displayMap         = null;
+let jugadoresMap       = null;
+let predicciones       = null;
+let groupStandingsData = null; // fetched once at init from ESPN standings endpoint
 const probsCache = new Map(); // ev.id → last valid { pWin, pDraw, pLose, source }
 
 // ─── CSV PARSER ──────────────────────────────────────────────────────────────
@@ -140,16 +144,6 @@ function parseESPN(data) {
       id:          event.id,
       date:        event.date,
       name:        event.name,
-      groupName: (() => {
-        const allNotes = [...(comp.notes ?? []), ...(event.notes ?? [])];
-        for (const note of allNotes) {
-          const text = String(note.text ?? note.value ?? note.headline ?? "");
-          const m = text.match(/Group\s+([A-L])/i);
-          if (m) return `Grupo ${m[1].toUpperCase()}`;
-        }
-        const m = String(event.name ?? "").match(/Group\s+([A-L])/i);
-        return m ? `Grupo ${m[1].toUpperCase()}` : null;
-      })(),
       homeAbbr:    home?.team?.abbreviation?.toUpperCase() ?? null,
       awayAbbr:    away?.team?.abbreviation?.toUpperCase() ?? null,
       homeDisplay: home?.team?.displayName ?? "",
@@ -179,6 +173,64 @@ function parseESPN(data) {
       })(),
     };
   }).filter(Boolean);
+}
+
+async function fetchGroupStandings() {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 15_000);
+  try {
+    const res = await fetch(ESPN_STANDINGS_URL, { cache: "no-store", signal: ctrl.signal });
+    if (!res.ok) return null;
+    return parseStandings(await res.json());
+  } catch { return null; }
+  finally { clearTimeout(timer); }
+}
+
+function parseStandings(data) {
+  // ESPN puede devolver grupos bajo 'children' o 'groups'
+  const groups = data.children ?? data.groups ?? [];
+  const result = [];
+
+  for (const grp of groups) {
+    const rawName = String(grp.name ?? grp.abbreviation ?? "");
+    const m = rawName.match(/Group\s+([A-L])\b/i);
+    if (!m) continue;
+
+    const entries = grp.standings?.entries ?? grp.entries ?? [];
+    const statVal = (stats, ...names) => {
+      for (const n of names) {
+        const s = (stats ?? []).find(s =>
+          s.name === n ||
+          s.abbreviation?.toUpperCase() === n.toUpperCase() ||
+          s.shortDisplayName?.toUpperCase() === n.toUpperCase()
+        );
+        if (s?.value != null) return Number(s.value) || 0;
+      }
+      return 0;
+    };
+
+    const teams = entries.map(e => {
+      const abbr = e.team?.abbreviation?.toUpperCase() ?? "";
+      if (!abbr) return null;
+      const st = e.stats ?? [];
+      return {
+        abbr,
+        display: e.team?.displayName ?? "",
+        pj:  statVal(st, "gamesPlayed", "GP"),
+        pg:  statVal(st, "wins", "W"),
+        pe:  statVal(st, "ties", "draws", "D"),
+        pp:  statVal(st, "losses", "L"),
+        gf:  statVal(st, "pointsFor", "goalsFor", "GF"),
+        ga:  statVal(st, "pointsAgainst", "goalsAgainst", "GA"),
+        pts: statVal(st, "points", "pts", "Pts", "PTS"),
+        latestEv: null,
+      };
+    }).filter(Boolean);
+
+    if (teams.length >= 2) result.push({ name: `Grupo ${m[1].toUpperCase()}`, teams });
+  }
+
+  return result.sort((a, b) => a.name.localeCompare(b.name));
 }
 
 // ─── SCORING ──────────────────────────────────────────────────────────────────
@@ -533,61 +585,68 @@ function renderPartidos(groups, openKeys = new Set()) {
 }
 
 // ─── GROUP STANDINGS ─────────────────────────────────────────────────────────
-function buildGroupStandings(events) {
-  const groups = new Map();
+function buildGroupStandings(events, baseStandings) {
+  if (!baseStandings || !baseStandings.length) return [];
 
-  const getTeam = (grpName, abbr, display) => {
-    if (!groups.has(grpName)) groups.set(grpName, new Map());
-    const grp = groups.get(grpName);
-    if (!grp.has(abbr)) {
-      grp.set(abbr, { abbr, display, pj: 0, pg: 0, pe: 0, pp: 0, gf: 0, ga: 0, pts: 0, latestEv: null });
-    }
-    return grp.get(abbr);
-  };
+  // Deep-copy base standings (completed matches from ESPN standings endpoint)
+  const result = baseStandings.map(grp => ({
+    name: grp.name,
+    teams: grp.teams.map(t => ({ ...t, latestEv: null })),
+  }));
 
-  // Register all teams (including pre-match events so they show with 0 stats)
-  for (const ev of events) {
-    if (!ev.homeAbbr || !ev.awayAbbr || !ev.groupName) continue;
-    getTeam(ev.groupName, ev.homeAbbr, ev.homeDisplay);
-    getTeam(ev.groupName, ev.awayAbbr, ev.awayDisplay);
+  // Index teams for quick lookup
+  const teamIndex = new Map(); // abbr → team object in result
+  for (const grp of result) {
+    for (const t of grp.teams) teamIndex.set(t.abbr, t);
   }
 
-  // Accumulate results from played/live matches
+  // Track latest match badge for all played/live events
   for (const ev of events) {
-    if (!ev.homeAbbr || !ev.awayAbbr || !ev.groupName) continue;
+    if (!ev.homeAbbr || !ev.awayAbbr) continue;
     if (ev.state !== "in" && ev.state !== "post") continue;
+    const home = teamIndex.get(ev.homeAbbr);
+    const away = teamIndex.get(ev.awayAbbr);
+    if (!home && !away) continue;
 
-    const grp = groups.get(ev.groupName);
-    if (!grp) continue;
-    const hs = ev.homeScore ?? 0, as_ = ev.awayScore ?? 0;
-
-    const update = (abbr, gf, ga) => {
-      const t = grp.get(abbr);
+    const updateLatest = t => {
       if (!t) return;
-      t.pj++; t.gf += gf; t.ga += ga;
-      if (gf > ga)        { t.pg++; t.pts += 3; }
-      else if (gf === ga) { t.pe++; t.pts += 1; }
-      else                { t.pp++; }
       if (!t.latestEv || ev.state === "in" || ev.date > t.latestEv.date) t.latestEv = ev;
     };
-    update(ev.homeAbbr, hs, as_);
-    update(ev.awayAbbr, as_, hs);
+    updateLatest(home);
+    updateLatest(away);
+
+    // Overlay live (in-progress) match as provisional on top of completed standings
+    if (ev.state === "in") {
+      const hs = ev.homeScore ?? 0, as_ = ev.awayScore ?? 0;
+      if (home) {
+        home.pj++; home.gf += hs; home.ga += as_;
+        if (hs > as_)       { home.pg++; home.pts += 3; }
+        else if (hs === as_) { home.pe++; home.pts += 1; }
+        else                 { home.pp++; }
+      }
+      if (away) {
+        away.pj++; away.gf += as_; away.ga += hs;
+        if (as_ > hs)       { away.pg++; away.pts += 3; }
+        else if (as_ === hs) { away.pe++; away.pts += 1; }
+        else                 { away.pp++; }
+      }
+    }
   }
 
-  return [...groups.entries()]
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([name, teamsMap]) => ({
-      name,
-      teams: [...teamsMap.values()].sort((a, b) => {
-        if (b.pts !== a.pts) return b.pts - a.pts;
-        const gdA = a.gf - a.ga, gdB = b.gf - b.ga;
-        if (gdB !== gdA) return gdB - gdA;
-        if (b.gf !== a.gf) return b.gf - a.gf;
-        const na = displayMap?.get(a.abbr) ?? a.display ?? a.abbr;
-        const nb = displayMap?.get(b.abbr) ?? b.display ?? b.abbr;
-        return na.localeCompare(nb, "es");
-      }),
-    }));
+  // Re-sort teams within each group
+  for (const grp of result) {
+    grp.teams.sort((a, b) => {
+      if (b.pts !== a.pts) return b.pts - a.pts;
+      const gdA = a.gf - a.ga, gdB = b.gf - b.ga;
+      if (gdB !== gdA) return gdB - gdA;
+      if (b.gf !== a.gf) return b.gf - a.gf;
+      const na = displayMap?.get(a.abbr) ?? a.display ?? a.abbr;
+      const nb = displayMap?.get(b.abbr) ?? b.display ?? b.abbr;
+      return na.localeCompare(nb, "es");
+    });
+  }
+
+  return result;
 }
 
 function renderGroups(standings) {
@@ -658,7 +717,7 @@ async function refresh() {
       ? prevOpen
       : new Set(groups.filter(g => g.event?.state === "in").map(g => g.key));
 
-    const standings = buildGroupStandings(events);
+    const standings = buildGroupStandings(events, groupStandingsData);
     const scrollY = window.scrollY;
     document.getElementById("ranking-container").innerHTML  = renderRanking(ranking, hasLive, jugadoresMap);
     document.getElementById("partidos-container").innerHTML = renderPartidos(groups, openKeys);
@@ -714,6 +773,9 @@ async function init() {
     showError(err.message);
     return;
   }
+
+  // Fetch group standings once (group assignments don't change during the tournament)
+  groupStandingsData = await fetchGroupStandings();
 
   await refresh();
 }
