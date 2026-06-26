@@ -746,7 +746,7 @@ function renderThirdPlaces(standings) {
         <th class="col-gnum" title="Empatados">E</th>
         <th class="col-gnum" title="Perdidos">P</th>
         <th class="col-gpts" title="Puntos">Pts</th>
-        <th class="col-goles" title="Goles a favor - Goles en contra">GF - GC</th>
+        <th class="col-goles" title="Goles a favor - Goles en contra">GLS</th>
       </tr></thead>
       <tbody>${rows}</tbody>
     </table></div>
@@ -795,7 +795,7 @@ function renderGroups(standings) {
           <th class="col-gnum" title="Empatados">E</th>
           <th class="col-gnum" title="Perdidos">P</th>
           <th class="col-gpts" title="Puntos">Pts</th>
-          <th class="col-goles" title="Goles a favor - Goles en contra">GF - GC</th>
+          <th class="col-goles" title="Goles a favor - Goles en contra">GLS</th>
         </tr></thead>
         <tbody>${rows}</tbody>
       </table></div>
