@@ -123,14 +123,27 @@ async function fetchESPN() {
   }
 }
 
-function parseRound(notes) {
-  const h = (notes?.[0]?.headline ?? "");
-  if (/round of 32/i.test(h))    return "Ronda de 32";
-  if (/round of 16/i.test(h))    return "Octavos de Final";
-  if (/quarter.?final/i.test(h)) return "Cuartos de Final";
-  if (/semi.?final/i.test(h))    return "Semifinales";
-  if (/third.?place/i.test(h))   return "Tercer Puesto";
-  if (/\bfinal\b/i.test(h))      return "Final";
+function parseRound(notes, event) {
+  // Try all note sources: comp.notes, ev.notes, and ev.season.slug as fallback
+  const headlines = [
+    notes?.[0]?.headline,
+    event?.notes?.[0]?.headline,
+    event?.season?.slug,
+  ].filter(Boolean);
+
+  for (const h of headlines) {
+    if (/round.?of.?32|r32/i.test(h))   return "Ronda de 32";
+    if (/round.?of.?16|r16/i.test(h))   return "Octavos de Final";
+    if (/quarter.?final/i.test(h))       return "Cuartos de Final";
+    if (/semi.?final/i.test(h))          return "Semifinales";
+    if (/third.?place|3rd.?place/i.test(h)) return "Tercer Puesto";
+    if (/\bfinal\b/i.test(h))            return "Final";
+  }
+
+  // Log unrecognized notes to help debug when knockout matches appear
+  if (headlines.length > 0 && !/group/i.test(headlines[0])) {
+    console.log("⚽ parseRound — headlines no reconocidos:", headlines);
+  }
   return null;
 }
 
@@ -182,7 +195,7 @@ function parseESPN(data) {
         const a = ml.away?.current?.odds;
         return h && d && a ? { home: h, draw: d, away: a } : null;
       })(),
-      round: parseRound(comp.notes ?? event.notes ?? []),
+      round: parseRound(comp.notes ?? [], event),
     };
   }).filter(Boolean);
 }
