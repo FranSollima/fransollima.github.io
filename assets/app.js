@@ -566,8 +566,9 @@ function formatDate(iso) {
 }
 
 function badgeHTML(state) {
-  const labels = { pre: "PRÓXIMO", in: "EN VIVO", post: "FINAL" };
+  const labels = { pre: null, in: "EN VIVO", post: "FINAL" };
   const label = labels[state] ?? state;
+  if (!label) return "";
   return `<span class="badge ${state}">${label}</span>`;
 }
 
