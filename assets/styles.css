@@ -533,7 +533,7 @@ details[open].match-card > summary::after { content: "▴"; }
 }
 
 /* ── Stats tab ──────────────────────────────────────────── */
-#stats-container { padding: 0.8rem; }
+#stats-container { padding: 0.8rem 5%; }
 
 .stats-grid {
   display: grid;
