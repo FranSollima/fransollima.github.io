@@ -26,6 +26,8 @@ let predicciones       = null;
 let groupStandingsData = null; // fetched once at init from ESPN standings endpoint
 const probsCache    = new Map(); // ev.id → last valid { pWin, pDraw, pLose, source }
 let lastEvents     = [];        // último fetch de ESPN, para usar en stats lazy
+let koNumberMap    = new Map(); // eventId → matchNumber (73-104)
+let koRoundIdxMap  = new Map(); // "round-of-32-1" → matchNumber
 let statsCache     = null;      // resultado de buildStats(), null = no cargado aún
 let statsFetching  = false;
 
@@ -128,6 +130,16 @@ async function fetchESPN() {
   }
 }
 
+function slugToRound(slug) {
+  if (slug === "round-of-32")     return "Ronda de 32";
+  if (slug === "round-of-16")     return "Octavos de Final";
+  if (slug === "quarterfinals")   return "Cuartos de Final";
+  if (slug === "semifinals")      return "Semifinales";
+  if (slug === "3rd-place-match") return "Tercer Puesto";
+  if (slug === "final")           return "Final";
+  return null;
+}
+
 function parseRound(notes, event) {
   // Try all note sources: comp.notes, ev.notes, and ev.season.slug as fallback
   const headlines = [
@@ -200,7 +212,8 @@ function parseESPN(data) {
         const a = ml.away?.current?.odds;
         return h && d && a ? { home: h, draw: d, away: a } : null;
       })(),
-      round: parseRound(comp.notes ?? [], event),
+      seasonSlug:  event.season?.slug ?? null,
+      round: parseRound(comp.notes ?? [], event) ?? slugToRound(event.season?.slug),
     };
   }).filter(Boolean);
 }
@@ -462,6 +475,42 @@ function buildRanking(scored) {
   });
 }
 
+function buildKoNumbers(events) {
+  koNumberMap.clear();
+  koRoundIdxMap.clear();
+  const koEvents = events
+    .filter(ev => ev.seasonSlug && ev.seasonSlug !== "group-stage")
+    .sort((a, b) => new Date(a.date) - new Date(b.date));
+  const counters = {};
+  koEvents.forEach((ev, i) => {
+    const num = 73 + i;
+    koNumberMap.set(ev.id, num);
+    counters[ev.seasonSlug] = (counters[ev.seasonSlug] ?? 0) + 1;
+    koRoundIdxMap.set(`${ev.seasonSlug}-${counters[ev.seasonSlug]}`, num);
+  });
+}
+
+function resolveKoTeam(displayName, abbr) {
+  if (abbr && displayMap?.get(abbr)) return displayMap.get(abbr);
+  // "Round of 32 3 Winner" → "Ganador 75"
+  const m = displayName.match(/^(Round of 32|Round of 16|Quarterfinal|Semifinal)\s+(\d+)\s+(Winner|Loser)$/i);
+  if (m) {
+    const slugMap = {
+      "round of 32":  "round-of-32",
+      "round of 16":  "round-of-16",
+      "quarterfinal": "quarterfinals",
+      "semifinal":    "semifinals",
+    };
+    const slug    = slugMap[m[1].toLowerCase()];
+    const idx     = parseInt(m[2]);
+    const isWin   = m[3].toLowerCase() === "winner";
+    const num     = koRoundIdxMap.get(`${slug}-${idx}`);
+    if (num) return `${isWin ? "Ganador" : "Perdedor"} ${num}`;
+  }
+  // Fallback: ESPN english name (Group L Winner, Third Place Group..., etc.)
+  return displayName;
+}
+
 function groupByMatch(scored, events = []) {
   const groups = new Map();
   for (const s of scored) {
@@ -589,8 +638,13 @@ function renderPartidos(groups, openKeys = new Set()) {
     const ev    = g.event;
     const state = ev?.state ?? "no_encontrado";
 
-    const displayHome = (ev?.homeAbbr && displayMap?.get(ev.homeAbbr)) || ev?.homeDisplay || g.equipo1;
-    const displayAway = (ev?.awayAbbr && displayMap?.get(ev.awayAbbr)) || ev?.awayDisplay || g.equipo2;
+    const matchNum = ev ? koNumberMap.get(ev.id) : null;
+    const displayHome = matchNum
+      ? resolveKoTeam(ev.homeDisplay, ev.homeAbbr)
+      : (ev?.homeAbbr && displayMap?.get(ev.homeAbbr)) || ev?.homeDisplay || g.equipo1;
+    const displayAway = matchNum
+      ? resolveKoTeam(ev.awayDisplay, ev.awayAbbr)
+      : (ev?.awayAbbr && displayMap?.get(ev.awayAbbr)) || ev?.awayDisplay || g.equipo2;
 
     let resultHTML = "";
     if ((state === "post" || state === "in") && ev.homeScore !== null) {
@@ -641,7 +695,7 @@ function renderPartidos(groups, openKeys = new Set()) {
 
     return `<details class="match-card" data-key="${esc(g.key)}" data-state="${esc(state)}"${openKeys.has(g.key) ? " open" : ""}>
       <summary class="match-header">
-        <div class="match-teams">${esc(displayHome)} vs ${esc(displayAway)}</div>
+        <div class="match-teams">${matchNum ? `${matchNum}: ` : ""}${esc(displayHome)} vs. ${esc(displayAway)}</div>
         <div class="match-meta">
           ${badgeHTML(state)}
           ${ev?.round ? `<span class="badge round">${esc(ev.round)}</span>` : ""}
@@ -991,6 +1045,7 @@ async function refresh() {
     firstRender = false;
 
     lastEvents = events;
+    buildKoNumbers(events);
     if (!statsCache && !statsFetching) loadStats();
     const standings = buildGroupStandings(events, groupStandingsData);
     const scrollY = window.scrollY;
