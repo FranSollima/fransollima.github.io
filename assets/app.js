@@ -860,7 +860,7 @@ async function buildStats(events) {
     }
   }
 
-  const top5 = map => [...map.values()].sort((a, b) => b.count - a.count).slice(0, 5);
+  const top5 = map => [...map.values()].sort((a, b) => b.count - a.count);
 
   return {
     goals:        top5(goals),
@@ -891,7 +891,7 @@ function renderStatCard(title, items, unit) {
     </div>`).join("");
   return `<div class="stat-card">
     <h3 class="stat-title">${esc(title)}</h3>
-    ${rows}
+    <div class="stat-body">${rows}</div>
   </div>`;
 }
 
@@ -991,6 +991,7 @@ async function refresh() {
     firstRender = false;
 
     lastEvents = events;
+    if (!statsCache && !statsFetching) loadStats();
     const standings = buildGroupStandings(events, groupStandingsData);
     const scrollY = window.scrollY;
     document.getElementById("ranking-container").innerHTML  = renderRanking(ranking, hasLive, jugadoresMap);
