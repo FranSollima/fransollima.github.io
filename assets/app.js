@@ -899,7 +899,7 @@ function renderStats(stats) {
   return `<div class="stats-grid">
     ${renderStatCard("Goleadores", stats.goals, "")}
     ${renderStatCard("Asistencias", stats.assists, "")}
-    ${renderStatCard("Goles en contra", stats.goalsAgainst, "")}
+    ${renderStatCard("Goles concedidos", stats.goalsAgainst, "")}
     ${renderStatCard("Vallas invictas", stats.cleanSheets, "")}
     ${renderStatCard("Tarjetas amarillas", stats.yellows, "")}
     ${renderStatCard("Tarjetas rojas", stats.reds, "")}
