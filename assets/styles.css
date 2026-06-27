@@ -277,7 +277,7 @@ details[open].match-card > summary::after { content: "▴"; }
   gap: 0.4rem;
   align-items: center;
 }
-.match-result { font-weight: 700; color: #1a1f36; font-size: 0.88rem; }
+.match-result { font-weight: 700; color: var(--c-primary); font-size: 0.85rem; background: rgba(0,40,104,0.08); border-radius: 20px; padding: 0.1em 0.55em; }
 .live-clock   { color: var(--c-accent); font-weight: 700; }
 
 .badge {
