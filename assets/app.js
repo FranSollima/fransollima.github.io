@@ -427,19 +427,22 @@ function playWeight(typeId) {
 }
 
 function parseMomentum(data, ev) {
-  // ESPN puede anidar commentary dentro de gamepackageJSON
-  const commentary = data?.commentary ?? data?.gamepackageJSON?.commentary ?? [];
-  console.log(`⚽ parseMomentum ${ev.id}: primer commentary:`, JSON.stringify(commentary[0]));
-  console.log(`⚽ parseMomentum ${ev.id}: keyEvents (primeros 3):`, JSON.stringify((data?.keyEvents ?? []).slice(0,3)));
-  const plays = commentary;
-  const map = new Map();
+  const keyEvents = data?.keyEvents ?? [];
+  const map  = new Map();
   const goals = [];
 
-  for (const play of plays) {
-    const typeId  = String(play?.type?.id ?? "");
-    const minute  = commentaryMinute(play?.clock?.displayValue);
-    if (minute < 0) continue;
-    const w = playWeight(typeId);
+  for (const play of keyEvents) {
+    const t      = play?.type?.type ?? "";   // kebab-case: "goal", "corner", etc.
+    const minute = Math.ceil((play?.clock?.value ?? 0) / 60);
+    if (minute <= 0) continue;
+
+    let w = 0;
+    if (/\bgoal\b/.test(t))                       w = 6;
+    else if (/penalty/.test(t))                    w = 3;
+    else if (/shot-on-target/.test(t))             w = 3;
+    else if (/shot/.test(t))                       w = 1.5;
+    else if (/corner/.test(t))                     w = 1;
+    else if (/free-kick|freekick/.test(t))         w = 0.5;
     if (w === 0) continue;
 
     if (!map.has(minute)) map.set(minute, { home: 0, away: 0 });
@@ -447,7 +450,7 @@ function parseMomentum(data, ev) {
     const isHome = play?.team?.displayName === ev.homeDisplay;
     if (isHome) entry.home += w; else entry.away += w;
 
-    if (typeId === "70") goals.push({ minute, isHome });
+    if (/\bgoal\b/.test(t)) goals.push({ minute, isHome });
   }
 
   const bars = [...map.entries()]
@@ -459,8 +462,7 @@ function parseMomentum(data, ev) {
 
 function renderMomentum(ev) {
   const cached = momentumCache.get(ev.id);
-  if (!cached) { console.log(`⚽ renderMomentum ${ev.id}: sin cache`); return ""; }
-  if (!cached.bars.length) { console.log(`⚽ renderMomentum ${ev.id}: bars vacío`); return ""; }
+  if (!cached || !cached.bars.length) return "";
   const { bars, goals } = cached;
 
   const maxMinute = Math.max(...bars.map(b => b.minute), 90);
