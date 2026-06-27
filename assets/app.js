@@ -556,12 +556,12 @@ function esc(s) {
 function formatDate(iso) {
   if (!iso) return "";
   try {
-    return new Date(iso).toLocaleString("es-AR", {
-      day: "2-digit", month: "2-digit",
-      hour: "2-digit", minute: "2-digit",
-      hour12: false,
-      timeZone: "America/Argentina/Buenos_Aires",
-    });
+    const d = new Date(new Date(iso).toLocaleString("en-US", { timeZone: "America/Argentina/Buenos_Aires" }));
+    const dd  = String(d.getDate()).padStart(2, "0");
+    const mm  = String(d.getMonth() + 1).padStart(2, "0");
+    const hh  = String(d.getHours()).padStart(2, "0");
+    const min = String(d.getMinutes()).padStart(2, "0");
+    return `${dd}/${mm}, ${hh}:${min}`;
   } catch { return iso; }
 }
 
