@@ -427,7 +427,10 @@ function playWeight(typeId) {
 }
 
 function parseMomentum(data, ev) {
-  const plays = data?.commentary ?? [];
+  // ESPN puede anidar commentary dentro de gamepackageJSON
+  const commentary = data?.commentary ?? data?.gamepackageJSON?.commentary ?? [];
+  console.log(`⚽ parseMomentum ${ev.id}: ${commentary.length} plays, keys top-level:`, Object.keys(data ?? {}));
+  const plays = commentary;
   const map = new Map();
   const goals = [];
 
@@ -455,7 +458,8 @@ function parseMomentum(data, ev) {
 
 function renderMomentum(ev) {
   const cached = momentumCache.get(ev.id);
-  if (!cached || !cached.bars.length) return "";
+  if (!cached) { console.log(`⚽ renderMomentum ${ev.id}: sin cache`); return ""; }
+  if (!cached.bars.length) { console.log(`⚽ renderMomentum ${ev.id}: bars vacío`); return ""; }
   const { bars, goals } = cached;
 
   const maxMinute = Math.max(...bars.map(b => b.minute), 90);
