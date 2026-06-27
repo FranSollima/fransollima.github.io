@@ -515,17 +515,14 @@ details[open].match-card > summary::after { content: "▴"; }
 }
 
 /* ── Stats tab ──────────────────────────────────────────── */
-#stats-container { padding: 0.8rem 0 0.8rem 0.8rem; }
+#stats-container { padding: 0.8rem; display: flex; flex-direction: column; align-items: center; }
 
 .stats-grid {
   display: flex;
-  flex-direction: row;
+  flex-direction: column;
   gap: 0.7rem;
-  overflow-x: auto;
-  scroll-snap-type: x mandatory;
-  -webkit-overflow-scrolling: touch;
-  padding-right: 0.8rem;
-  padding-bottom: 0.4rem;
+  width: 100%;
+  align-items: center;
 }
 
 .stat-card {
@@ -534,10 +531,8 @@ details[open].match-card > summary::after { content: "▴"; }
   border-radius: 10px;
   overflow: hidden;
   box-shadow: 0 1px 4px rgba(0,0,0,0.06);
-  flex-shrink: 0;
   width: 72vw;
   max-width: 260px;
-  scroll-snap-align: start;
 }
 
 .stat-title {
