@@ -25,6 +25,9 @@ let jugadoresMap       = null;
 let predicciones       = null;
 let groupStandingsData = null; // fetched once at init from ESPN standings endpoint
 const probsCache    = new Map(); // ev.id → last valid { pWin, pDraw, pLose, source }
+let lastEvents     = [];        // último fetch de ESPN, para usar en stats lazy
+let statsCache     = null;      // resultado de buildStats(), null = no cargado aún
+let statsFetching  = false;
 
 
 // ─── CSV PARSER ──────────────────────────────────────────────────────────────
@@ -200,6 +203,20 @@ function parseESPN(data) {
       round: parseRound(comp.notes ?? [], event),
     };
   }).filter(Boolean);
+}
+
+async function fetchSummary(eventId) {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 10_000);
+  try {
+    const res = await fetch(
+      `https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/summary?event=${eventId}`,
+      { cache: "no-store", signal: ctrl.signal }
+    );
+    if (!res.ok) return null;
+    return res.json();
+  } catch { return null; }
+  finally { clearTimeout(timer); }
 }
 
 async function fetchGroupStandings() {
@@ -764,6 +781,146 @@ function renderThirdPlaces(standings) {
   </div>`;
 }
 
+// ─── STATS ───────────────────────────────────────────────────────────────────
+async function buildStats(events) {
+  const completed = events.filter(ev => ev.state === "post");
+  const summaries = await Promise.all(completed.map(ev => fetchSummary(ev.id)));
+
+  const goals        = new Map(); // athleteId → { name, count }
+  const assists      = new Map();
+  const yellows      = new Map(); // teamAbbr  → { name, count }
+  const reds         = new Map();
+
+  for (const data of summaries) {
+    if (!data) continue;
+    for (const kev of data.keyEvents ?? []) {
+      const type = kev.type?.type ?? "";
+
+      if (/^goal/.test(type)) {
+        const scorer   = kev.participants?.[0]?.athlete;
+        const assister = kev.participants?.[1]?.athlete;
+        if (scorer) {
+          const e = goals.get(scorer.id) ?? { name: scorer.displayName, count: 0 };
+          e.count++;
+          goals.set(scorer.id, e);
+        }
+        if (assister) {
+          const e = assists.get(assister.id) ?? { name: assister.displayName, count: 0 };
+          e.count++;
+          assists.set(assister.id, e);
+        }
+      }
+
+      if (type === "yellow-card") {
+        const abbr = kev.team?.abbreviation?.toUpperCase();
+        if (abbr) {
+          const e = yellows.get(abbr) ?? { name: kev.team.displayName, count: 0 };
+          e.count++;
+          yellows.set(abbr, e);
+        }
+      }
+
+      if (/red/.test(type)) {
+        const abbr = kev.team?.abbreviation?.toUpperCase();
+        if (abbr) {
+          const e = reds.get(abbr) ?? { name: kev.team.displayName, count: 0 };
+          e.count++;
+          reds.set(abbr, e);
+        }
+      }
+    }
+  }
+
+  // Team stats from scoreboard (no summaries needed)
+  const goalsAgainst = new Map();
+  const cleanSheets  = new Map();
+
+  for (const ev of completed) {
+    if (ev.homeScore == null || ev.awayScore == null) continue;
+    const homeName = displayMap?.get(ev.homeAbbr) ?? ev.homeDisplay ?? ev.homeAbbr;
+    const awayName = displayMap?.get(ev.awayAbbr) ?? ev.awayDisplay ?? ev.awayAbbr;
+
+    const h = goalsAgainst.get(ev.homeAbbr) ?? { name: homeName, count: 0 };
+    h.count += ev.awayScore;
+    goalsAgainst.set(ev.homeAbbr, h);
+
+    const a = goalsAgainst.get(ev.awayAbbr) ?? { name: awayName, count: 0 };
+    a.count += ev.homeScore;
+    goalsAgainst.set(ev.awayAbbr, a);
+
+    if (ev.awayScore === 0) {
+      const cs = cleanSheets.get(ev.homeAbbr) ?? { name: homeName, count: 0 };
+      cs.count++;
+      cleanSheets.set(ev.homeAbbr, cs);
+    }
+    if (ev.homeScore === 0) {
+      const cs = cleanSheets.get(ev.awayAbbr) ?? { name: awayName, count: 0 };
+      cs.count++;
+      cleanSheets.set(ev.awayAbbr, cs);
+    }
+  }
+
+  const top5 = map => [...map.values()].sort((a, b) => b.count - a.count).slice(0, 5);
+
+  return {
+    goals:        top5(goals),
+    assists:      top5(assists),
+    goalsAgainst: top5(goalsAgainst),
+    cleanSheets:  top5(cleanSheets),
+    yellows:      top5(yellows),
+    reds:         top5(reds),
+  };
+}
+
+function renderStatCard(title, items, unit) {
+  if (!items.length) {
+    return `<div class="stat-card">
+      <h3 class="stat-title">${esc(title)}</h3>
+      <p class="empty">Sin datos aún.</p>
+    </div>`;
+  }
+  const maxCount = items[0].count;
+  const rows = items.map((item, i) => `
+    <div class="stat-row">
+      <span class="stat-rank">${i + 1}</span>
+      <span class="stat-name">${esc(item.name)}</span>
+      <span class="stat-count">${item.count}</span>
+      <div class="stat-bar-wrap">
+        <div class="stat-bar" style="width:${Math.round((item.count / maxCount) * 100)}%"></div>
+      </div>
+    </div>`).join("");
+  return `<div class="stat-card">
+    <h3 class="stat-title">${esc(title)}</h3>
+    ${rows}
+  </div>`;
+}
+
+function renderStats(stats) {
+  return `<div class="stats-grid">
+    ${renderStatCard("Goleadores", stats.goals, "")}
+    ${renderStatCard("Asistencias", stats.assists, "")}
+    ${renderStatCard("Goles en contra", stats.goalsAgainst, "")}
+    ${renderStatCard("Vallas invictas", stats.cleanSheets, "")}
+    ${renderStatCard("Tarjetas amarillas", stats.yellows, "")}
+    ${renderStatCard("Tarjetas rojas", stats.reds, "")}
+  </div>`;
+}
+
+async function loadStats() {
+  if (statsFetching) return;
+  statsFetching = true;
+  document.getElementById("stats-container").innerHTML =
+    '<p class="empty stats-loading">Cargando estadísticas…</p>';
+  try {
+    statsCache = await buildStats(lastEvents);
+    document.getElementById("stats-container").innerHTML = renderStats(statsCache);
+  } catch (err) {
+    document.getElementById("stats-container").innerHTML =
+      `<p class="empty">Error al cargar estadísticas: ${esc(err.message)}</p>`;
+    statsFetching = false; // allow retry
+  }
+}
+
 function renderGroups(standings) {
   if (!standings.length) return '<p class="empty">Datos de grupos no disponibles aún.</p>';
 
@@ -833,6 +990,7 @@ async function refresh() {
       : prevOpen;
     firstRender = false;
 
+    lastEvents = events;
     const standings = buildGroupStandings(events, groupStandingsData);
     const scrollY = window.scrollY;
     document.getElementById("ranking-container").innerHTML  = renderRanking(ranking, hasLive, jugadoresMap);
@@ -874,7 +1032,11 @@ function switchTab(tabName) {
 function initTabs() {
   const tabs = [...document.querySelectorAll(".tab")];
   tabs.forEach(btn => {
-    btn.addEventListener("click", () => switchTab(btn.dataset.tab));
+    btn.addEventListener("click", () => {
+      const name = btn.dataset.tab;
+      switchTab(name);
+      if (name === "stats" && !statsCache && !statsFetching) loadStats();
+    });
   });
 
 }
