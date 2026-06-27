@@ -812,20 +812,20 @@ async function buildStats(events) {
       }
 
       if (type === "yellow-card") {
-        const abbr = kev.team?.abbreviation?.toUpperCase();
-        if (abbr) {
-          const e = yellows.get(abbr) ?? { name: kev.team.displayName, count: 0 };
+        const key = kev.team?.id;
+        if (key) {
+          const e = yellows.get(key) ?? { name: kev.team.displayName, count: 0 };
           e.count++;
-          yellows.set(abbr, e);
+          yellows.set(key, e);
         }
       }
 
-      if (/red/.test(type)) {
-        const abbr = kev.team?.abbreviation?.toUpperCase();
-        if (abbr) {
-          const e = reds.get(abbr) ?? { name: kev.team.displayName, count: 0 };
+      if (type === "red-card") {
+        const key = kev.team?.id;
+        if (key) {
+          const e = reds.get(key) ?? { name: kev.team.displayName, count: 0 };
           e.count++;
-          reds.set(abbr, e);
+          reds.set(key, e);
         }
       }
     }
