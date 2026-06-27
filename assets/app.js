@@ -429,8 +429,7 @@ function playWeight(typeId) {
 function parseMomentum(data, ev) {
   // ESPN puede anidar commentary dentro de gamepackageJSON
   const commentary = data?.commentary ?? data?.gamepackageJSON?.commentary ?? [];
-  const typeIds = [...new Set(commentary.map(p => `${p?.type?.id}:${p?.type?.text ?? p?.type?.description ?? ""}`))];
-  console.log(`⚽ parseMomentum ${ev.id}: ${commentary.length} plays, type IDs:`, typeIds);
+  console.log(`⚽ parseMomentum ${ev.id}: primer play:`, JSON.stringify(commentary[0]));
   const plays = commentary;
   const map = new Map();
   const goals = [];
