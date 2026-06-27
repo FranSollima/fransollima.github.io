@@ -67,6 +67,24 @@ header h1 {
 
 .header-logo { height: 2rem; width: auto; display: block; flex-shrink: 0; }
 
+.reload-btn {
+  background: none;
+  border: 1px solid var(--c-border);
+  border-radius: 50%;
+  width: 2rem;
+  height: 2rem;
+  font-size: 1.1rem;
+  cursor: pointer;
+  color: var(--c-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  opacity: 0.7;
+  transition: opacity 0.15s;
+}
+.reload-btn:active { opacity: 1; transform: rotate(180deg); transition: transform 0.3s, opacity 0.15s; }
+
 #status-bar {
   display: flex;
   flex-direction: column;
