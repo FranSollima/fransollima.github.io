@@ -5,6 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Prode Mundial 2026</title>
   <link rel="stylesheet" href="./assets/styles.css">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#002868">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Prode 2026">
+  <link rel="apple-touch-icon" href="/assets/icon-180.png">
 </head>
 <body>
   <header>
@@ -40,9 +46,12 @@
 
   <footer class="app-footer">
     <img src="./assets/2026_FIFA_World_Cup.svg" alt="FIFA World Cup 2026" class="wc-logo">
-    <span class="version">v1.10.3</span>
+    <span class="version">v1.11.0</span>
   </footer>
 
   <script src="./assets/app.js"></script>
+  <script>
+    if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js");
+  </script>
 </body>
 </html>
