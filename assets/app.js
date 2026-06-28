@@ -475,19 +475,36 @@ function buildRanking(scored) {
   });
 }
 
+// FIFA official match numbers for Round of 32 — keyed by pairKey of ESPN abbreviations
+const FIFA_R32 = new Map([
+  ["CAN|RSA", 73], ["GER|PAR", 74], ["MAR|NED", 75], ["BRA|JPN", 76],
+  ["FRA|SWE", 77], ["CIV|NOR", 78], ["ECU|MEX", 79], ["COD|ENG", 80],
+  ["BIH|USA", 81], ["BEL|SEN", 82], ["CRO|POR", 83], ["AUT|ESP", 84],
+  ["ALG|SUI", 85], ["ARG|CPV", 86], ["COL|GHA", 87], ["AUS|EGY", 88],
+]);
+
+// FIFA official match numbers for R16+ — keyed by ESPN event ID
+const FIFA_KO_BY_ID = new Map([
+  // Round of 16
+  ["760502", 90], ["760503", 89], ["760504", 91], ["760505", 92],
+  ["760506", 93], ["760507", 94], ["760509", 95], ["760508", 96],
+  // QF, SF, 3PO, Final — IDs to add when ESPN publishes them
+]);
+
 function buildKoNumbers(events) {
   koNumberMap.clear();
   koRoundIdxMap.clear();
-  const koEvents = events
-    .filter(ev => ev.seasonSlug && ev.seasonSlug !== "group-stage")
-    .sort((a, b) => new Date(a.date) - new Date(b.date));
-  const counters = {};
-  koEvents.forEach((ev, i) => {
-    const num = 73 + i;
-    koNumberMap.set(ev.id, num);
-    counters[ev.seasonSlug] = (counters[ev.seasonSlug] ?? 0) + 1;
-    koRoundIdxMap.set(`${ev.seasonSlug}-${counters[ev.seasonSlug]}`, num);
-  });
+
+  // R32 → look up by team pair
+  for (const ev of events) {
+    if (ev.seasonSlug === "group-stage") continue;
+    const key = pairKey(ev.homeAbbr, ev.awayAbbr);
+    const num = FIFA_R32.get(key) ?? FIFA_KO_BY_ID.get(ev.id);
+    if (num) koNumberMap.set(ev.id, num);
+  }
+
+  // ESPN's internal R32 index N maps to FIFA M(N+72) — confirmed from bracket data
+  for (let n = 1; n <= 16; n++) koRoundIdxMap.set(`round-of-32-${n}`, n + 72);
 }
 
 function resolveKoTeam(displayName, abbr) {
