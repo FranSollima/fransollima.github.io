@@ -23,6 +23,7 @@ let equiposMap         = null;
 let displayMap         = null;
 let jugadoresMap       = null;
 let predicciones       = null;
+let prediccionesKO     = null;
 let groupStandingsData = null; // fetched once at init from ESPN standings endpoint
 const probsCache    = new Map(); // ev.id → last valid { pWin, pDraw, pLose, source }
 let lastEvents     = [];        // último fetch de ESPN, para usar en stats lazy
@@ -114,6 +115,33 @@ async function loadPredicciones(map) {
       goles2: parseInt(row["GOLES 2"], 10),
     };
   });
+}
+
+// ─── PREDICCIONES KO ─────────────────────────────────────────────────────────
+// CSV: JUGADOR;PARTIDO;LLAVE;EQUIPO 1;EQUIPO 2;GOLES 1;GOLES 2;GANADOR
+// LLAVE y GANADOR se ignoran.
+async function loadPredKO() {
+  try {
+    const text = await loadText("./predicciones_ko.csv");
+    const rows = parseCSV(text);
+    return rows.map(row => {
+      const matchNum = parseInt(row["PARTIDO"], 10);
+      const e1 = row["EQUIPO 1"]?.toUpperCase().trim() ?? "";
+      const e2 = row["EQUIPO 2"]?.toUpperCase().trim() ?? "";
+      return {
+        jugador:  row["JUGADOR"]?.trim() ?? "",
+        matchNum,
+        equipo1:  row["EQUIPO 1"]?.trim() ?? "",
+        equipo2:  row["EQUIPO 2"]?.trim() ?? "",
+        abbr1:    equiposMap?.get(e1) ?? null,
+        abbr2:    equiposMap?.get(e2) ?? null,
+        goles1:   parseInt(row["GOLES 1"], 10),
+        goles2:   parseInt(row["GOLES 2"], 10),
+      };
+    }).filter(r => !isNaN(r.matchNum) && r.jugador);
+  } catch {
+    return [];
+  }
 }
 
 // ─── ESPN ─────────────────────────────────────────────────────────────────────
@@ -342,6 +370,75 @@ function scoreAll(preds, events) {
   });
 }
 
+// ─── KO SCORING ───────────────────────────────────────────────────────────────
+// koEventByNum: Map<matchNum, event> — built in refresh()
+function scoreKO(preds, koEventByNum) {
+  return preds.map(pred => {
+    const base = {
+      ...pred, event: null, estado: "pre",
+      llave: null, ptsLlave: 0, ptsResult: 0, ptsExacto: 0, puntos: 0,
+      corrG1: null, corrG2: null, realG1: null, realG2: null,
+    };
+
+    const ev = koEventByNum.get(pred.matchNum);
+    if (!ev) return base;
+    if (ev.state === "pre") return { ...base, event: ev };
+    if (ev.homeScore === null || ev.awayScore === null) {
+      return { ...base, event: ev, estado: ev.state };
+    }
+
+    const isR32    = pred.matchNum >= 73 && pred.matchNum <= 88;
+    const realHome = ev.homeAbbr, realAway = ev.awayAbbr;
+    const mHome    = pred.abbr1 === realHome || pred.abbr2 === realHome;
+    const mAway    = pred.abbr1 === realAway || pred.abbr2 === realAway;
+
+    let llave = null, ptsLlave = 0;
+    if (!isR32) {
+      if (!mHome && !mAway) {
+        return { ...base, event: ev, estado: ev.state, llave: false };
+      }
+      llave    = mHome && mAway;
+      ptsLlave = llave ? 1 : 0;
+    }
+
+    // Align predicted goals to home/away order
+    const homeIsAbbr1 = pred.abbr1 === realHome ||
+      (pred.abbr2 === realAway && pred.abbr1 !== realAway);
+    const corrG1 = homeIsAbbr1 ? pred.goles1 : pred.goles2;
+    const corrG2 = homeIsAbbr1 ? pred.goles2 : pred.goles1;
+
+    const realG1    = ev.homeScore, realG2 = ev.awayScore;
+    const exact     = corrG1 === realG1 && corrG2 === realG2;
+    const result    = Math.sign(corrG1 - corrG2) === Math.sign(realG1 - realG2);
+    const ptsResult = result ? 1 : 0;
+    const ptsExacto = exact ? 2 : 0;
+
+    return {
+      ...pred, event: ev, estado: ev.state,
+      llave, ptsLlave, corrG1, corrG2, realG1, realG2,
+      ptsResult, ptsExacto,
+      puntos: ptsLlave + ptsResult + ptsExacto,
+    };
+  });
+}
+
+function buildRankingKO(koScored) {
+  const map = new Map();
+  for (const s of koScored) {
+    if (!map.has(s.jugador)) {
+      map.set(s.jugador, { jugador: s.jugador, llaves: 0, exactos: 0, resultados: 0, puntos: 0 });
+    }
+    const j = map.get(s.jugador);
+    if (s.llave === true)  j.llaves++;
+    if (s.ptsExacto > 0)   j.exactos++;
+    else if (s.ptsResult > 0) j.resultados++;
+    j.puntos += s.puntos ?? 0;
+  }
+  return [...map.values()].sort((a, b) =>
+    b.puntos - a.puntos || b.llaves - a.llaves || b.exactos - a.exactos
+  );
+}
+
 // ─── LIVE PROBABILITY (Poisson) ──────────────────────────────────────────────
 const XG_PER_SOT        = 0.25;        // xG por tiro al arco (~25% conversión en élite)
 const XG_PER_SHOT_WIDE  = 0.03;        // xG por tiro desviado/bloqueado
@@ -563,8 +660,16 @@ function groupByMatch(scored, events = []) {
   for (const ev of events) {
     if (!ev.round) continue;
     if (!groups.has(ev.id)) {
-      groups.set(ev.id, { key: ev.id, equipo1: ev.homeDisplay, equipo2: ev.awayDisplay, event: ev, preds: [] });
+      groups.set(ev.id, { key: ev.id, equipo1: ev.homeDisplay, equipo2: ev.awayDisplay, event: ev, preds: [], koPreds: [] });
     }
+  }
+
+  // Attach KO predictions to their match groups by event id
+  for (const s of (arguments[2] ?? [])) {
+    const evId = s.event?.id;
+    if (!evId) continue;
+    const g = groups.get(evId);
+    if (g) g.koPreds.push(s);
   }
   const todayAR = new Date().toLocaleDateString("en-CA", { timeZone: "America/Argentina/Buenos_Aires" });
   const pastDay = ev => ev?.date
@@ -658,6 +763,36 @@ function renderRanking(ranking, hasLive, jugMap) {
   return html;
 }
 
+function renderRankingKO(ranking, jugMap) {
+  if (!ranking.length) return "";
+  let html = `<h3 class="ranking-section-title">Eliminatorias</h3>
+  <table class="ranking-table">
+    <thead><tr>
+      <th class="col-rank">#</th>
+      <th class="col-name">Jugador</th>
+      <th class="col-num" title="Llaves predichas correctamente">Llaves</th>
+      <th class="col-num" title="Marcador exacto">Exactos</th>
+      <th class="col-num" title="Resultado correcto">Result.</th>
+      <th class="col-total">Total</th>
+    </tr></thead><tbody>`;
+  let displayRank = 1;
+  for (let i = 0; i < ranking.length; i++) {
+    const r = ranking[i];
+    if (i > 0 && ranking[i].puntos !== ranking[i - 1].puntos) displayRank = i + 1;
+    const nombre = jugMap?.get(r.jugador) ?? r.jugador;
+    html += `<tr>
+      <td class="col-rank">${displayRank}</td>
+      <td class="col-name">${esc(nombre)}</td>
+      <td class="col-num">${r.llaves}</td>
+      <td class="col-num">${r.exactos}</td>
+      <td class="col-num">${r.resultados}</td>
+      <td class="col-total">${r.puntos}</td>
+    </tr>`;
+  }
+  html += "</tbody></table>";
+  return html;
+}
+
 function renderPartidos(groups, openKeys = new Set()) {
   if (!groups.length) return '<p class="empty">No hay predicciones cargadas.</p>';
 
@@ -727,8 +862,33 @@ function renderPartidos(groups, openKeys = new Set()) {
       </tr>`;
     }).join("");
 
-    const predSection = g.preds.length > 0
-      ? `<table class="pred-table"><tbody>${predRows}</tbody></table>`
+    // KO prediction rows
+    const koRows = [...(g.koPreds ?? [])].sort((a, b) => {
+      const pa = a.puntos ?? -1, pb = b.puntos ?? -1;
+      if (pb !== pa) return pb - pa;
+      const na = jugadoresMap?.get(a.jugador) ?? a.jugador;
+      const nb = jugadoresMap?.get(b.jugador) ?? b.jugador;
+      return na.localeCompare(nb, "es");
+    }).map(s => {
+      const cls     = ptsClass(s.puntos, s.estado);
+      const ptsText = s.puntos !== null
+        ? `${s.puntos} pt${s.puntos !== 1 ? "s" : ""}`
+        : (s.estado === "pre" ? "—" : "?");
+      const liveTag  = s.estado === "in" ? ' <span class="prov-mark" title="En vivo">*</span>' : "";
+      const nombre   = jugadoresMap?.get(s.jugador) ?? s.jugador;
+      const llaveCls = s.llave === true ? "ko-llave-ok" : s.llave === false ? "ko-llave-no" : "ko-llave-na";
+      const llaveIcon = s.llave === true ? "✓" : s.llave === false ? "✗" : "—";
+      return `<tr class="${cls}">
+        <td class="col-name">${esc(nombre)}</td>
+        <td class="ko-llave ${llaveCls}" title="Llave">${llaveIcon}</td>
+        <td class="pred-score">${s.goles1} - ${s.goles2}</td>
+        <td class="pred-pts">${ptsText}${liveTag}</td>
+      </tr>`;
+    }).join("");
+
+    const predSection = g.preds.length > 0 || koRows
+      ? `${g.preds.length > 0 ? `<table class="pred-table"><tbody>${predRows}</tbody></table>` : ""}
+         ${koRows ? `<table class="pred-table"><tbody>${koRows}</tbody></table>` : ""}`
       : `<p class="empty no-preds">Sin predicciones cargadas</p>`;
 
     return `<details class="match-card" data-key="${esc(g.key)}" data-state="${esc(state)}"${openKeys.has(g.key) ? " open" : ""}>
@@ -1070,24 +1230,36 @@ async function refresh() {
     const events  = await fetchESPN();
     const scored  = scoreAll(predicciones, events);
     const ranking = buildRanking(scored);
-    const groups  = groupByMatch(scored, events);
     const hasLive = events.some(ev => ev.state === "in");
 
     const prevOpen = new Set(
       [...document.querySelectorAll('#partidos-container details[open]')].map(el => el.dataset.key)
     );
+
+    lastEvents = events;
+    buildKoNumbers(events);
+    if (!statsCache && !statsFetching) loadStats();
+
+    // Build koEventByNum for KO scoring
+    const koEventByNum = new Map();
+    for (const ev of events) {
+      const num = koNumberMap.get(ev.id);
+      if (num) koEventByNum.set(num, ev);
+    }
+    const koScored  = scoreKO(prediccionesKO ?? [], koEventByNum);
+    const koRanking = buildRankingKO(koScored);
+    const groups    = groupByMatch(scored, events, koScored);
+
     // Primera carga: auto-abrir partidos en vivo; después preservar estado del usuario
     const openKeys = firstRender
       ? new Set(groups.filter(g => g.event?.state === "in").map(g => g.key))
       : prevOpen;
     firstRender = false;
 
-    lastEvents = events;
-    buildKoNumbers(events);
-    if (!statsCache && !statsFetching) loadStats();
     const standings = buildGroupStandings(events, groupStandingsData);
     const scrollY = window.scrollY;
-    document.getElementById("ranking-container").innerHTML  = renderRanking(ranking, hasLive, jugadoresMap);
+    document.getElementById("ranking-container").innerHTML  =
+      renderRanking(ranking, hasLive, jugadoresMap) + renderRankingKO(koRanking, jugadoresMap);
     document.getElementById("partidos-container").innerHTML = renderPartidos(groups, openKeys);
     document.getElementById("grupos-container").innerHTML   = renderGroups(standings);
     window.scrollTo(0, scrollY);
@@ -1143,8 +1315,9 @@ async function init() {
     const eq     = await buildEquiposMap();
     equiposMap   = eq.equipos;
     displayMap   = eq.display;
-    jugadoresMap = await loadJugadores();
-    predicciones = await loadPredicciones(equiposMap);
+    jugadoresMap   = await loadJugadores();
+    predicciones   = await loadPredicciones(equiposMap);
+    prediccionesKO = await loadPredKO();
   } catch (err) {
     showError(err.message);
     return;
