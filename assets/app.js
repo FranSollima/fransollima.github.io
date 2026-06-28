@@ -483,28 +483,43 @@ const FIFA_R32 = new Map([
   ["ALG|SUI", 85], ["ARG|CPV", 86], ["COL|GHA", 87], ["AUS|EGY", 88],
 ]);
 
-// FIFA official match numbers for R16+ — keyed by ESPN event ID
-const FIFA_KO_BY_ID = new Map([
+// FIFA official match numbers for R16+ — keyed by UTC date prefix "YYYY-MM-DDTHH:MM"
+// Times confirmed: image shows Argentina time (UTC-3), converted to UTC (+3h)
+const FIFA_BY_DATE = new Map([
   // Round of 16
-  ["760502", 90], ["760503", 89], ["760504", 91], ["760505", 92],
-  ["760506", 93], ["760507", 94], ["760509", 95], ["760508", 96],
-  // QF, SF, 3PO, Final — IDs to add when ESPN publishes them
+  ["2026-07-04T17:00", 90], ["2026-07-04T21:00", 89],
+  ["2026-07-05T20:00", 91], ["2026-07-06T00:00", 92],
+  ["2026-07-06T19:00", 93], ["2026-07-07T00:00", 94],
+  ["2026-07-07T16:00", 95], ["2026-07-07T20:00", 96],
+  // Quarterfinals
+  ["2026-07-09T20:00", 97], ["2026-07-10T19:00", 98],
+  ["2026-07-11T21:00", 99], ["2026-07-12T01:00", 100],
+  // Semifinals
+  ["2026-07-14T19:00", 101], ["2026-07-15T19:00", 102],
+  // Third place & Final
+  ["2026-07-18T21:00", 103], ["2026-07-19T19:00", 104],
 ]);
 
 function buildKoNumbers(events) {
   koNumberMap.clear();
   koRoundIdxMap.clear();
 
-  // R32 → look up by team pair
   for (const ev of events) {
     if (ev.seasonSlug === "group-stage") continue;
-    const key = pairKey(ev.homeAbbr, ev.awayAbbr);
-    const num = FIFA_R32.get(key) ?? FIFA_KO_BY_ID.get(ev.id);
+    // R32: match by team pair
+    const pairNum = FIFA_R32.get(pairKey(ev.homeAbbr, ev.awayAbbr));
+    // R16+: match by UTC date prefix
+    const dateKey = ev.date?.slice(0, 16);
+    const num = pairNum ?? FIFA_BY_DATE.get(dateKey);
     if (num) koNumberMap.set(ev.id, num);
   }
 
-  // ESPN's internal R32 index N maps to FIFA M(N+72) — confirmed from bracket data
+  // ESPN's internal R32 index N → FIFA M(N+72), confirmed from bracket data
   for (let n = 1; n <= 16; n++) koRoundIdxMap.set(`round-of-32-${n}`, n + 72);
+
+  // ESPN's internal R16 index N → FIFA match number (ordered by ESPN event ID)
+  const r16Map = [90, 89, 91, 92, 93, 94, 96, 95];
+  r16Map.forEach((num, i) => koRoundIdxMap.set(`round-of-16-${i + 1}`, num));
 }
 
 function resolveKoTeam(displayName, abbr) {
