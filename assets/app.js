@@ -520,6 +520,12 @@ function buildKoNumbers(events) {
   // ESPN's internal R16 index N → FIFA match number (ordered by ESPN event ID)
   const r16Map = [90, 89, 91, 92, 93, 94, 96, 95];
   r16Map.forEach((num, i) => koRoundIdxMap.set(`round-of-16-${i + 1}`, num));
+
+  // QF indices 1-4 → M97-M100 (cronológico = FIFA order)
+  [97, 98, 99, 100].forEach((num, i) => koRoundIdxMap.set(`quarterfinals-${i + 1}`, num));
+
+  // SF indices 1-2 → M101-M102
+  [101, 102].forEach((num, i) => koRoundIdxMap.set(`semifinals-${i + 1}`, num));
 }
 
 function resolveKoTeam(displayName, abbr) {
