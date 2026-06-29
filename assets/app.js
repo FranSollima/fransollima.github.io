@@ -725,7 +725,8 @@ function renderRanking(ranking, hasLive, jugMap) {
 
   const liveDot = hasLive ? ' <span class="live-dot" title="Hay partidos en vivo"></span>' : "";
 
-  let html = `<table class="ranking-table">
+  let html = `<h3 class="ranking-section-title">Fase de grupos</h3>
+  <table class="ranking-table">
     <thead><tr>
       <th class="col-rank">#</th>
       <th class="col-name">Jugador</th>
@@ -885,7 +886,8 @@ function renderPartidos(groups, openKeys = new Set()) {
           : "Empate";
       return `<tr class="${cls}">
         <td class="col-name">${esc(nombre)}</td>
-        <td class="pred-winner"><span class="ko-llave ${llaveCls}" title="Llave">${llaveIcon}</span> ${esc(winnerName)}</td>
+        <td class="ko-llave-col ${llaveCls}" title="Llave">${llaveIcon}</td>
+        <td class="pred-winner">${esc(winnerName)}</td>
         <td class="pred-score">${s.goles1} - ${s.goles2}</td>
         <td class="pred-pts">${ptsText}${liveTag}</td>
       </tr>`;
