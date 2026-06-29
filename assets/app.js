@@ -767,14 +767,14 @@ function renderRanking(ranking, hasLive, jugMap) {
 function renderRankingKO(ranking, jugMap) {
   if (!ranking.length) return "";
   let html = `<h3 class="ranking-section-title">Eliminatorias</h3>
-  <table class="ranking-table">
+  <table class="ranking-table ranking-table-ko">
     <thead><tr>
       <th class="col-rank">#</th>
       <th class="col-name">Jugador</th>
-      <th class="col-num" title="Llaves predichas correctamente">Llaves</th>
-      <th class="col-num" title="Marcador exacto">Exactos</th>
-      <th class="col-num" title="Resultado correcto">Result.</th>
-      <th class="col-total">Total</th>
+      <th class="col-ko-num" title="Llaves predichas correctamente">Llaves</th>
+      <th class="col-ko-num" title="Marcador exacto">Exactos</th>
+      <th class="col-ko-num" title="Resultado correcto">Result.</th>
+      <th class="col-ko-total">Total</th>
     </tr></thead><tbody>`;
   let displayRank = 1;
   for (let i = 0; i < ranking.length; i++) {
@@ -784,10 +784,10 @@ function renderRankingKO(ranking, jugMap) {
     html += `<tr>
       <td class="col-rank">${displayRank}</td>
       <td class="col-name">${esc(nombre)}</td>
-      <td class="col-num">${r.llaves}</td>
-      <td class="col-num">${r.exactos}</td>
-      <td class="col-num">${r.resultados}</td>
-      <td class="col-total">${r.puntos}</td>
+      <td class="col-ko-num">${r.llaves}</td>
+      <td class="col-ko-num">${r.exactos}</td>
+      <td class="col-ko-num">${r.resultados}</td>
+      <td class="col-ko-total">${r.puntos}</td>
     </tr>`;
   }
   html += "</tbody></table>";

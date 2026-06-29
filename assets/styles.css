@@ -169,6 +169,10 @@ header h1 {
 .col-name  { }
 .col-num   { width: 4.5rem; text-align: center; }
 .col-total { width: 4.5rem; text-align: center; font-weight: 700; white-space: nowrap; }
+.col-ko-num   { width: 3.2rem; text-align: center; }
+.col-ko-total { width: 3rem; text-align: center; font-weight: 700; }
+.ranking-table-ko th,
+.ranking-table-ko td { padding: 0.38rem 0.4rem; }
 
 .prov-mark { color: var(--c-pts1); font-size: 0.75em; margin-left: 2px; }
 .prov-note { font-size: 0.72rem; color: var(--c-pts1); padding: 0.4rem 0.75rem; }
