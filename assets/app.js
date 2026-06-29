@@ -177,7 +177,7 @@ function parseRound(notes, event) {
   ].filter(Boolean);
 
   for (const h of headlines) {
-    if (/round.?of.?32|r32/i.test(h))   return "Ronda de 32";
+    if (/round.?of.?32|r32/i.test(h))   return "Dieciseisavos de final";
     if (/round.?of.?16|r16/i.test(h))   return "Octavos de Final";
     if (/quarter.?final/i.test(h))       return "Cuartos de Final";
     if (/semi.?final/i.test(h))          return "Semifinales";
@@ -903,7 +903,7 @@ function renderPartidos(groups, openKeys = new Set()) {
         <div class="match-teams">${matchNum ? `${matchNum}: ` : ""}${esc(displayHome)} vs. ${esc(displayAway)}</div>
         <div class="match-meta">
           ${badgeHTML(state)}
-          ${ev?.round ? `<span class="badge round">${esc(ev.round.replace(/^Round of 32$/i, "Dieciseisavos de final"))}</span>` : ""}
+          ${ev?.round ? `<span class="badge round">${esc(ev.round)}</span>` : ""}
           ${resultHTML}
           ${state === "in" ? `<span class="live-clock">${ev.statusName === "STATUS_HALFTIME" ? "Entretiempo" : esc(ev.displayClock)}</span>` : ""}
           <span class="match-date">${formatDate(ev?.date)}</span>
