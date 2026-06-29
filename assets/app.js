@@ -903,7 +903,7 @@ function renderPartidos(groups, openKeys = new Set()) {
         <div class="match-teams">${matchNum ? `${matchNum}: ` : ""}${esc(displayHome)} vs. ${esc(displayAway)}</div>
         <div class="match-meta">
           ${badgeHTML(state)}
-          ${ev?.round ? `<span class="badge round">${esc(ev.round)}</span>` : ""}
+          ${ev?.round ? `<span class="badge round">${esc(ev.round.replace(/^Round of 32$/i, "Dieciseisavos de final"))}</span>` : ""}
           ${resultHTML}
           ${state === "in" ? `<span class="live-clock">${ev.statusName === "STATUS_HALFTIME" ? "Entretiempo" : esc(ev.displayClock)}</span>` : ""}
           <span class="match-date">${formatDate(ev?.date)}</span>
