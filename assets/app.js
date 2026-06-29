@@ -867,6 +867,10 @@ function renderPartidos(groups, openKeys = new Set()) {
     const koRows = [...(g.koPreds ?? [])].sort((a, b) => {
       const pa = a.puntos ?? -1, pb = b.puntos ?? -1;
       if (pb !== pa) return pb - pa;
+      const wa = winnerKey(a), wb = winnerKey(b);
+      if (wa !== wb) return wa - wb;
+      if (a.goles1 !== b.goles1) return a.goles1 - b.goles1;
+      if (a.goles2 !== b.goles2) return a.goles2 - b.goles2;
       const na = jugadoresMap?.get(a.jugador) ?? a.jugador;
       const nb = jugadoresMap?.get(b.jugador) ?? b.jugador;
       return na.localeCompare(nb, "es");
