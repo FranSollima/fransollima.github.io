@@ -876,11 +876,16 @@ function renderPartidos(groups, openKeys = new Set()) {
         : (s.estado === "pre" ? "—" : "?");
       const liveTag  = s.estado === "in" ? ' <span class="prov-mark" title="En vivo">*</span>' : "";
       const nombre   = jugadoresMap?.get(s.jugador) ?? s.jugador;
-      const llaveCls = s.llave === true ? "ko-llave-ok" : s.llave === false ? "ko-llave-no" : "ko-llave-na";
+      const llaveCls  = s.llave === true ? "ko-llave-ok" : s.llave === false ? "ko-llave-no" : "ko-llave-na";
       const llaveIcon = s.llave === true ? "✓" : s.llave === false ? "✗" : "—";
+      const winnerName = s.goles1 > s.goles2
+        ? (displayMap?.get(s.abbr1) ?? s.equipo1)
+        : s.goles1 < s.goles2
+          ? (displayMap?.get(s.abbr2) ?? s.equipo2)
+          : "Empate";
       return `<tr class="${cls}">
         <td class="col-name">${esc(nombre)}</td>
-        <td class="ko-llave ${llaveCls}" title="Llave">${llaveIcon}</td>
+        <td class="pred-winner"><span class="ko-llave ${llaveCls}" title="Llave">${llaveIcon}</span> ${esc(winnerName)}</td>
         <td class="pred-score">${s.goles1} - ${s.goles2}</td>
         <td class="pred-pts">${ptsText}${liveTag}</td>
       </tr>`;
