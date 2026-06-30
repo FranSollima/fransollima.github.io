@@ -382,23 +382,23 @@ function scoreKO(preds, koEventByNum) {
 
     const ev = koEventByNum.get(pred.matchNum);
     if (!ev) return base;
-    if (ev.state === "pre") return { ...base, event: ev };
-    if (ev.homeScore === null || ev.awayScore === null) {
-      return { ...base, event: ev, estado: ev.state };
-    }
 
     const isR32    = pred.matchNum >= 73 && pred.matchNum <= 88;
     const realHome = ev.homeAbbr, realAway = ev.awayAbbr;
-    const mHome    = pred.abbr1 === realHome || pred.abbr2 === realHome;
-    const mAway    = pred.abbr1 === realAway || pred.abbr2 === realAway;
+    const teamsKnown = realHome && realAway;
 
+    // Evaluate llave as soon as teams are known (even pre-match)
     let llave = null, ptsLlave = 0;
-    if (!isR32) {
-      if (!mHome && !mAway) {
-        return { ...base, event: ev, estado: ev.state, llave: false };
-      }
+    if (!isR32 && teamsKnown) {
+      const mHome = pred.abbr1 === realHome || pred.abbr2 === realHome;
+      const mAway = pred.abbr1 === realAway || pred.abbr2 === realAway;
       llave    = mHome && mAway;
-      ptsLlave = llave ? 1 : 0;
+      ptsLlave = (llave && ev.state !== "pre") ? 1 : 0;
+    }
+
+    if (ev.state === "pre") return { ...base, event: ev, llave };
+    if (ev.homeScore === null || ev.awayScore === null) {
+      return { ...base, event: ev, estado: ev.state, llave };
     }
 
     // Align predicted goals to home/away order
