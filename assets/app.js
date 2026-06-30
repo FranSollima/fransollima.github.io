@@ -764,7 +764,7 @@ function renderRanking(ranking, hasLive, jugMap) {
 
 function renderRankingKO(ranking, jugMap, hasLive) {
   if (!ranking.length) return "";
-  const liveDot = hasLive ? ' <span class="live-dot" title="Hay partidos en vivo"></span>' : "";
+  const liveDot = hasLive ? '<span class="live-dot live-dot-th" title="Hay partidos en vivo"></span>' : "";
   let html = `<h3 class="ranking-section-title">Eliminatorias</h3>
   <table class="ranking-table ranking-table-ko">
     <thead><tr>
@@ -773,7 +773,7 @@ function renderRankingKO(ranking, jugMap, hasLive) {
       <th class="col-ko-num" title="Llaves predichas correctamente">Llaves</th>
       <th class="col-ko-num" title="Marcador exacto">Exactos</th>
       <th class="col-ko-num" title="Resultado correcto">Result.</th>
-      <th class="col-ko-total">Total${liveDot}</th>
+      <th class="col-ko-total">Total ${liveDot}</th>
     </tr></thead><tbody>`;
   let displayRank = 1;
   for (let i = 0; i < ranking.length; i++) {
