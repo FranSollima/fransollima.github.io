@@ -386,15 +386,22 @@ function scoreKO(preds, koEventByNum) {
     const isR32    = pred.matchNum >= 73 && pred.matchNum <= 88;
     const realHome = ev.homeAbbr, realAway = ev.awayAbbr;
     const isRealAbbr = s => s && /^[A-Z]{2,3}$/.test(s);
-    const teamsKnown = isRealAbbr(realHome) && isRealAbbr(realAway);
+    const homeKnown = isRealAbbr(realHome);
+    const awayKnown = isRealAbbr(realAway);
 
-    // Evaluate llave as soon as teams are known (even pre-match)
+    // Evaluate llave as soon as at least one team is known
     let llave = null, ptsLlave = 0;
-    if (!isR32 && teamsKnown) {
-      const mHome = pred.abbr1 === realHome || pred.abbr2 === realHome;
-      const mAway = pred.abbr1 === realAway || pred.abbr2 === realAway;
-      llave    = mHome && mAway;
-      ptsLlave = (llave && ev.state !== "pre") ? 1 : 0;
+    if (!isR32 && (homeKnown || awayKnown)) {
+      const predSet = new Set([pred.abbr1, pred.abbr2].filter(Boolean));
+      const mHome = !homeKnown || predSet.has(realHome);
+      const mAway = !awayKnown || predSet.has(realAway);
+      if (!mHome || !mAway) {
+        llave = false; // already impossible
+      } else if (homeKnown && awayKnown) {
+        llave = predSet.has(realHome) && predSet.has(realAway);
+      }
+      // else: one team known and pred matches it — still possible (null)
+      ptsLlave = (llave === true && ev.state !== "pre") ? 1 : 0;
     }
 
     if (ev.state === "pre") return { ...base, event: ev, llave };
