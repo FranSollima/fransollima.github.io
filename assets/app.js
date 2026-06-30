@@ -404,7 +404,7 @@ function scoreKO(preds, koEventByNum) {
       ptsLlave = llave === true ? 1 : 0;
     }
 
-    if (ev.state === "pre") return { ...base, event: ev, llave };
+    if (ev.state === "pre") return { ...base, event: ev, llave, ptsLlave, puntos: ptsLlave };
     if (ev.homeScore === null || ev.awayScore === null) {
       return { ...base, event: ev, estado: ev.state, llave };
     }
