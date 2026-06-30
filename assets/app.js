@@ -731,8 +731,6 @@ function ptsClass(pts, estado) {
 function renderRanking(ranking, hasLive, jugMap) {
   if (!ranking.length) return '<p class="empty">No hay datos aún.</p>';
 
-  const liveDot = hasLive ? ' <span class="live-dot" title="Hay partidos en vivo"></span>' : "";
-
   let html = `<h3 class="ranking-section-title">Fase de grupos</h3>
   <table class="ranking-table">
     <thead><tr>
@@ -740,7 +738,7 @@ function renderRanking(ranking, hasLive, jugMap) {
       <th class="col-name">Jugador</th>
       <th class="col-num" title="Marcador exacto = 3 pts">Exactos</th>
       <th class="col-num" title="Resultado correcto = 1 pt">Result.</th>
-      <th class="col-total">Total${liveDot}</th>
+      <th class="col-total">Total</th>
     </tr></thead><tbody>`;
 
   let displayRank = 1;
@@ -761,19 +759,12 @@ function renderRanking(ranking, hasLive, jugMap) {
     </tr>`;
   }
   html += "</tbody></table>";
-
-  if (hasLive) {
-    html += `<div class="ranking-live-note">
-      <span class="live-dot"></span>
-      Los puntos reflejan resultados en vivo y pueden cambiar hasta que termine el partido.
-    </div>`;
-  }
-
   return html;
 }
 
-function renderRankingKO(ranking, jugMap) {
+function renderRankingKO(ranking, jugMap, hasLive) {
   if (!ranking.length) return "";
+  const liveDot = hasLive ? ' <span class="live-dot" title="Hay partidos en vivo"></span>' : "";
   let html = `<h3 class="ranking-section-title">Eliminatorias</h3>
   <table class="ranking-table ranking-table-ko">
     <thead><tr>
@@ -782,7 +773,7 @@ function renderRankingKO(ranking, jugMap) {
       <th class="col-ko-num" title="Llaves predichas correctamente">Llaves</th>
       <th class="col-ko-num" title="Marcador exacto">Exactos</th>
       <th class="col-ko-num" title="Resultado correcto">Result.</th>
-      <th class="col-ko-total">Total</th>
+      <th class="col-ko-total">Total${liveDot}</th>
     </tr></thead><tbody>`;
   let displayRank = 1;
   for (let i = 0; i < ranking.length; i++) {
@@ -799,6 +790,12 @@ function renderRankingKO(ranking, jugMap) {
     </tr>`;
   }
   html += "</tbody></table>";
+  if (hasLive) {
+    html += `<div class="ranking-live-note">
+      <span class="live-dot"></span>
+      Los puntos reflejan resultados en vivo y pueden cambiar hasta que termine el partido.
+    </div>`;
+  }
   return html;
 }
 
@@ -1278,7 +1275,7 @@ async function refresh() {
     const standings = buildGroupStandings(events, groupStandingsData);
     const scrollY = window.scrollY;
     document.getElementById("ranking-container").innerHTML  =
-      renderRanking(ranking, hasLive, jugadoresMap) + renderRankingKO(koRanking, jugadoresMap);
+      renderRankingKO(koRanking, jugadoresMap, hasLive) + renderRanking(ranking, hasLive, jugadoresMap);
     document.getElementById("partidos-container").innerHTML = renderPartidos(groups, openKeys);
     document.getElementById("grupos-container").innerHTML   = renderGroups(standings);
     window.scrollTo(0, scrollY);
