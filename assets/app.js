@@ -869,7 +869,7 @@ function renderPartidos(groups, openKeys = new Set()) {
     }).join("");
 
     // KO prediction rows
-    const koPredWinner = s => s.goles1 > s.goles2 ? s.abbr1 : s.goles1 < s.goles2 ? s.abbr2 : "";
+    const koPredWinner = s => s.goles1 > s.goles2 ? (s.abbr1 ?? "") : s.goles1 < s.goles2 ? (s.abbr2 ?? "") : "";
     const koRows = [...(g.koPreds ?? [])].sort((a, b) => {
       const pa = a.puntos ?? -1, pb = b.puntos ?? -1;
       if (pb !== pa) return pb - pa;
