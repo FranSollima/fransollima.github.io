@@ -401,7 +401,7 @@ function scoreKO(preds, koEventByNum) {
         llave = predSet.has(realHome) && predSet.has(realAway);
       }
       // else: one team known and pred matches it — still possible (null)
-      ptsLlave = (llave === true && ev.state !== "pre") ? 1 : 0;
+      ptsLlave = llave === true ? 1 : 0;
     }
 
     if (ev.state === "pre") return { ...base, event: ev, llave };
