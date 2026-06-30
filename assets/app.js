@@ -385,7 +385,8 @@ function scoreKO(preds, koEventByNum) {
 
     const isR32    = pred.matchNum >= 73 && pred.matchNum <= 88;
     const realHome = ev.homeAbbr, realAway = ev.awayAbbr;
-    const teamsKnown = realHome && realAway;
+    const isRealAbbr = s => s && /^[A-Z]{2,3}$/.test(s);
+    const teamsKnown = isRealAbbr(realHome) && isRealAbbr(realAway);
 
     // Evaluate llave as soon as teams are known (even pre-match)
     let llave = null, ptsLlave = 0;
