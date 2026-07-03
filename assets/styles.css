@@ -642,3 +642,162 @@ details[open].match-card > summary::after { content: "▴"; }
 }
 
 .stats-loading { padding: 2rem 0; text-align: center; }
+
+/* ─── Bracket ─────────────────────────────────────────────────── */
+.bk-wrap {
+  overflow-x: auto;
+  padding: 8px 8px 24px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.bk-bracket {
+  display: flex;
+  align-items: flex-start;
+  width: max-content;
+  padding-bottom: 8px;
+}
+
+.bk-round {
+  width: 120px;
+  flex-shrink: 0;
+}
+
+.bk-round + .bk-round {
+  margin-left: 22px;
+}
+
+.bk-round-label {
+  font-size: 0.58rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #6b7280;
+  text-align: center;
+  padding-bottom: 6px;
+  white-space: nowrap;
+}
+
+.bk-round-cells {
+  display: flex;
+  flex-direction: column;
+  overflow: visible;
+}
+
+.bk-cell {
+  position: relative;
+  display: flex;
+  align-items: center;
+  overflow: visible;
+  flex-shrink: 0;
+}
+
+[data-round="0"] .bk-cell { height: 40px; }
+[data-round="1"] .bk-cell { height: 80px; }
+[data-round="2"] .bk-cell { height: 160px; }
+[data-round="3"] .bk-cell { height: 320px; }
+[data-round="4"] .bk-cell { height: 640px; }
+
+/* Horizontal arm → connector zone */
+.bk-round:not(:last-child) .bk-cell::after {
+  content: '';
+  position: absolute;
+  right: -22px;
+  top: 50%;
+  width: 22px;
+  height: 0;
+  border-top: 1.5px solid #d1d5db;
+  pointer-events: none;
+}
+
+/* Vertical connector: spans from midpoint of top cell to midpoint of bottom cell */
+.bk-round:not(:last-child) .bk-pair-top::before {
+  content: '';
+  position: absolute;
+  right: -22px;
+  top: 50%;
+  height: 100%;
+  width: 0;
+  border-right: 1.5px solid #d1d5db;
+  pointer-events: none;
+}
+
+/* Match card */
+.bk-match {
+  width: 100%;
+  border: 1px solid #e5e7eb;
+  border-radius: 5px;
+  overflow: hidden;
+  background: #fff;
+  font-size: 0.68rem;
+}
+
+.bk-match.bk-live {
+  border-color: #ef4444;
+  box-shadow: 0 0 0 1px #ef444440;
+}
+
+.bk-team {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 3px 5px;
+  min-height: 19px;
+  gap: 3px;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.bk-team:last-child { border-bottom: none; }
+
+.bk-tname {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 500;
+  line-height: 1.2;
+}
+
+.bk-tscore {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
+
+.bk-winner { background: rgba(34, 197, 94, 0.08); }
+.bk-winner .bk-tname,
+.bk-winner .bk-tscore { font-weight: 700; color: #15803d; }
+.bk-loser { opacity: 0.45; }
+
+/* 3rd place */
+.bk-third {
+  margin-top: 20px;
+  width: 120px;
+  margin-left: calc(3 * (120px + 22px));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Dark mode */
+@media (prefers-color-scheme: dark) {
+  .bk-round:not(:last-child) .bk-cell::after,
+  .bk-round:not(:last-child) .bk-pair-top::before { border-color: #374151; }
+  .bk-match { background: #1f2937; border-color: #374151; }
+  .bk-match.bk-live { border-color: #ef4444; }
+  .bk-team { border-color: #2d3748; }
+  .bk-winner { background: rgba(34, 197, 94, 0.13); }
+  .bk-winner .bk-tname,
+  .bk-winner .bk-tscore { color: #4ade80; }
+}
+:root[data-theme="dark"] .bk-match { background: #1f2937; border-color: #374151; }
+:root[data-theme="dark"] .bk-team { border-color: #2d3748; }
+:root[data-theme="dark"] .bk-round:not(:last-child) .bk-cell::after,
+:root[data-theme="dark"] .bk-round:not(:last-child) .bk-pair-top::before { border-color: #374151; }
+:root[data-theme="dark"] .bk-winner { background: rgba(34,197,94,0.13); }
+:root[data-theme="dark"] .bk-winner .bk-tname,
+:root[data-theme="dark"] .bk-winner .bk-tscore { color: #4ade80; }
+:root[data-theme="light"] .bk-match { background: #fff; border-color: #e5e7eb; }
+:root[data-theme="light"] .bk-winner { background: rgba(34,197,94,0.08); }
+:root[data-theme="light"] .bk-winner .bk-tname,
+:root[data-theme="light"] .bk-winner .bk-tscore { color: #15803d; }

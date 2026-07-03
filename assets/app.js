@@ -1191,6 +1191,66 @@ async function loadStats() {
   }
 }
 
+function renderBracket(events) {
+  const byNum = new Map();
+  for (const ev of events) {
+    if (ev.matchNum && ev.matchNum >= 73) byNum.set(ev.matchNum, ev);
+  }
+  const isReal = s => s && /^[A-Z]{2,3}$/.test(s);
+
+  function teamRow(abbr, score, won, lost) {
+    const name = isReal(abbr) ? (displayMap?.get(abbr) ?? abbr) : "—";
+    const scoreStr = score !== null && score !== undefined ? String(score) : "";
+    const cls = won ? " bk-winner" : lost ? " bk-loser" : "";
+    return `<div class="bk-team${cls}">
+      <span class="bk-tname">${esc(name)}</span>
+      ${scoreStr !== "" ? `<span class="bk-tscore">${scoreStr}</span>` : ""}
+    </div>`;
+  }
+
+  function matchCard(num) {
+    const ev = byNum.get(num);
+    const h = ev?.homeAbbr, a = ev?.awayAbbr;
+    const hs = ev?.homeScore, as_ = ev?.awayScore;
+    const done = ev?.state === "post", live = ev?.state === "in";
+    const hWon = done && hs > as_, aWon = done && as_ > hs;
+    return `<div class="bk-match${live ? " bk-live" : ""}" title="M${num}">
+      ${teamRow(h, (live || done) ? hs : null, hWon, aWon)}
+      ${teamRow(a, (live || done) ? as_ : null, aWon, hWon)}
+    </div>`;
+  }
+
+  const ROUNDS = [
+    { label: "1/16", nums: [73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88] },
+    { label: "1/8",  nums: [89,90,91,92,93,94,95,96] },
+    { label: "1/4",  nums: [97,98,99,100] },
+    { label: "Semi", nums: [101,102] },
+    { label: "Final",nums: [104] },
+  ];
+
+  let html = '<div class="bk-wrap"><div class="bk-bracket">';
+  for (let ri = 0; ri < ROUNDS.length; ri++) {
+    const r = ROUNDS[ri];
+    const isLast = ri === ROUNDS.length - 1;
+    html += `<div class="bk-round" data-round="${ri}">
+      <div class="bk-round-label">${r.label}</div>
+      <div class="bk-round-cells">`;
+    for (let mi = 0; mi < r.nums.length; mi++) {
+      const pairCls = !isLast ? (mi % 2 === 0 ? " bk-pair-top" : " bk-pair-bot") : "";
+      html += `<div class="bk-cell${pairCls}">${matchCard(r.nums[mi])}</div>`;
+    }
+    html += '</div></div>';
+  }
+  html += '</div>';
+
+  if (byNum.has(103)) {
+    html += `<div class="bk-third"><span class="bk-round-label">3er puesto</span>${matchCard(103)}</div>`;
+  }
+
+  html += '</div>';
+  return html;
+}
+
 function renderGroups(standings) {
   if (!standings.length) return '<p class="empty">Datos de grupos no disponibles aún.</p>';
 
@@ -1280,6 +1340,7 @@ async function refresh() {
       renderRankingKO(koRanking, jugadoresMap, hasLive) + renderRanking(ranking, hasLive, jugadoresMap);
     document.getElementById("partidos-container").innerHTML = renderPartidos(groups, openKeys);
     document.getElementById("grupos-container").innerHTML   = renderGroups(standings);
+    document.getElementById("bracket-container").innerHTML  = renderBracket(events);
     window.scrollTo(0, scrollY);
 
 
