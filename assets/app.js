@@ -1213,8 +1213,7 @@ function renderBracket(byNum) {
     const done = ev?.state === "post", live = ev?.state === "in";
     const hWon = done && (hs > as_ || (hs === as_ && ev.homeWinner === true));
     const aWon = done && (as_ > hs || (hs === as_ && ev.awayWinner === true));
-    const etTag = done && ev.wentToET ? " bk-et" : "";
-    return `<div class="bk-match${live ? " bk-live" : ""}${etTag}" title="M${num}">
+    return `<div class="bk-match${live ? " bk-live" : ""}" title="M${num}">
       ${teamRow(h, (live || done) ? hs : null, hWon, aWon)}
       ${teamRow(a, (live || done) ? as_ : null, aWon, hWon)}
     </div>`;

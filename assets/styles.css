@@ -809,4 +809,3 @@ details[open].match-card > summary::after { content: "▴"; }
 :root[data-theme="light"] .bk-winner .bk-tname,
 :root[data-theme="light"] .bk-winner .bk-tscore { color: #15803d; }
 
-.bk-match.bk-et { border-style: dashed; }
