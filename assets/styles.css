@@ -693,6 +693,8 @@ details[open].match-card > summary::after { content: "▴"; }
 }
 
 [data-round="0"] .bk-cell { height: 40px; }
+[data-round="0"] .bk-round-cells { gap: 4px; }
+[data-round="0"] .bk-pair-top::before { height: calc(100% + 4px); }
 [data-round="1"] .bk-cell { height: 80px; }
 [data-round="2"] .bk-cell { height: 160px; }
 [data-round="3"] .bk-cell { height: 320px; }
