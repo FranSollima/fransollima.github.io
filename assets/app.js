@@ -1191,11 +1191,7 @@ async function loadStats() {
   }
 }
 
-function renderBracket(events) {
-  const byNum = new Map();
-  for (const ev of events) {
-    if (ev.matchNum && ev.matchNum >= 73) byNum.set(ev.matchNum, ev);
-  }
+function renderBracket(byNum) {
   const isReal = s => s && /^[A-Z]{2,3}$/.test(s);
 
   function teamRow(abbr, score, won, lost) {
@@ -1340,7 +1336,7 @@ async function refresh() {
       renderRankingKO(koRanking, jugadoresMap, hasLive) + renderRanking(ranking, hasLive, jugadoresMap);
     document.getElementById("partidos-container").innerHTML = renderPartidos(groups, openKeys);
     document.getElementById("grupos-container").innerHTML   = renderGroups(standings);
-    document.getElementById("bracket-container").innerHTML  = renderBracket(events);
+    document.getElementById("bracket-container").innerHTML  = renderBracket(koEventByNum);
     window.scrollTo(0, scrollY);
 
 
