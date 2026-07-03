@@ -219,6 +219,8 @@ function parseESPN(data) {
       awayDisplay: away?.team?.displayName ?? "",
       homeScore:   home?.score != null ? parseInt(home.score, 10) : null,
       awayScore:   away?.score != null ? parseInt(away.score, 10) : null,
+      homeWinner:  home?.winner ?? null,
+      awayWinner:  away?.winner ?? null,
       state:       statusType.completed ? "post" : (statusType.state ?? "pre"),
       completed:   statusType.completed ?? false,
       statusDesc:  statusType.description ?? "",
@@ -1209,8 +1211,10 @@ function renderBracket(byNum) {
     const h = ev?.homeAbbr, a = ev?.awayAbbr;
     const hs = ev?.homeScore, as_ = ev?.awayScore;
     const done = ev?.state === "post", live = ev?.state === "in";
-    const hWon = done && hs > as_, aWon = done && as_ > hs;
-    return `<div class="bk-match${live ? " bk-live" : ""}" title="M${num}">
+    const hWon = done && (hs > as_ || (hs === as_ && ev.homeWinner === true));
+    const aWon = done && (as_ > hs || (hs === as_ && ev.awayWinner === true));
+    const etTag = done && ev.wentToET ? " bk-et" : "";
+    return `<div class="bk-match${live ? " bk-live" : ""}${etTag}" title="M${num}">
       ${teamRow(h, (live || done) ? hs : null, hWon, aWon)}
       ${teamRow(a, (live || done) ? as_ : null, aWon, hWon)}
     </div>`;
