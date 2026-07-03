@@ -953,8 +953,9 @@ function buildGroupStandings(events, baseStandings) {
     for (const t of grp.teams) teamIndex.set(t.abbr, t);
   }
 
-  // Track latest match badge for all played/live events
+  // Track latest match badge — group stage only (KO matches must not bleed into standings)
   for (const ev of events) {
+    if (ev.matchNum >= 73) continue;
     if (!ev.homeAbbr || !ev.awayAbbr) continue;
     if (ev.state !== "in" && ev.state !== "post") continue;
     const home = teamIndex.get(ev.homeAbbr);
