@@ -692,13 +692,11 @@ details[open].match-card > summary::after { content: "▴"; }
   flex-shrink: 0;
 }
 
-[data-round="0"] .bk-cell { height: 40px; }
-[data-round="0"] .bk-round-cells { gap: 4px; }
-[data-round="0"] .bk-pair-top::before { height: calc(100% + 4px); }
-[data-round="1"] .bk-cell { height: 80px; }
-[data-round="2"] .bk-cell { height: 160px; }
-[data-round="3"] .bk-cell { height: 320px; }
-[data-round="4"] .bk-cell { height: 640px; }
+[data-round="0"] .bk-cell { height: 48px; }
+[data-round="1"] .bk-cell { height: 96px; }
+[data-round="2"] .bk-cell { height: 192px; }
+[data-round="3"] .bk-cell { height: 384px; }
+[data-round="4"] .bk-cell { height: 768px; }
 
 /* Horizontal arm → connector zone */
 .bk-round:not(:last-child) .bk-cell::after {

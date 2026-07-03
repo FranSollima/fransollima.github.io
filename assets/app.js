@@ -1216,10 +1216,14 @@ function renderBracket(byNum) {
     </div>`;
   }
 
+  // Bracket order (top→bottom) derived from FIFA_R32 pairings → R16 matchups:
+  // M89=PAR/FRA←(M74,M77), M90=CAN/MAR←(M73,M75), M91=BRA/NOR←(M76,M78)
+  // M92=MEX/ENG←(M79,M80), M93=POR/ESP←(M83,M84), M94=USA/BEL←(M81,M82)
+  // M95←(M85,M86), M96←(M87,M88)
   const ROUNDS = [
-    { label: "1/16", nums: [73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88] },
-    { label: "1/8",  nums: [89,90,91,92,93,94,95,96] },
-    { label: "1/4",  nums: [97,98,99,100] },
+    { label: "1/16", nums: [74,77, 73,75, 76,78, 79,80, 83,84, 81,82, 85,86, 87,88] },
+    { label: "1/8",  nums: [89,90, 91,92, 93,94, 95,96] },
+    { label: "1/4",  nums: [97,98, 99,100] },
     { label: "Semi", nums: [101,102] },
     { label: "Final",nums: [104] },
   ];
