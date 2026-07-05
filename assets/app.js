@@ -761,6 +761,11 @@ function renderRanking(ranking, hasLive, jugMap) {
     </tr>`;
   }
   html += "</tbody></table>";
+  html += `<p class="ranking-legend">
+    Puntuación: exacto = 3 pts · resultado = 1 pt · llave acertada = 1 pt *<br>
+    Desempate: puntos → resultados → llaves *<br>
+    <span class="ranking-legend-note">* solo en fase eliminatoria</span>
+  </p>`;
   return html;
 }
 

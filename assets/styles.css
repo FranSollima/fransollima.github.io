@@ -809,3 +809,17 @@ details[open].match-card > summary::after { content: "▴"; }
 :root[data-theme="light"] .bk-winner .bk-tname,
 :root[data-theme="light"] .bk-winner .bk-tscore { color: #15803d; }
 
+
+/* Leyenda de puntuación / desempate */
+.ranking-legend {
+  margin: 10px 4px 4px;
+  font-size: 0.72rem;
+  color: #6b7280;
+  line-height: 1.6;
+}
+.ranking-legend-note { font-style: italic; }
+@media (prefers-color-scheme: dark) {
+  .ranking-legend { color: #9ca3af; }
+}
+:root[data-theme="dark"] .ranking-legend { color: #9ca3af; }
+:root[data-theme="light"] .ranking-legend { color: #6b7280; }
