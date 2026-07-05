@@ -444,8 +444,9 @@ function buildRankingKO(koScored) {
     else if (s.ptsResult > 0) j.resultados++;
     j.puntos += s.puntos ?? 0;
   }
+  // Desempate KO: puntos → resultados → llaves acertadas
   return [...map.values()].sort((a, b) =>
-    b.puntos - a.puntos || b.llaves - a.llaves || b.exactos - a.exactos
+    b.puntos - a.puntos || b.resultados - a.resultados || b.llaves - a.llaves
   );
 }
 
@@ -575,6 +576,7 @@ function buildRanking(scored) {
       else if (s.puntos === 1) j.resultados++;
     }
   }
+  // Desempate grupos: puntos → resultados
   return [...map.values()].sort((a, b) => {
     const ta = a.ptsPost + a.ptsLive;
     const tb = b.ptsPost + b.ptsLive;
