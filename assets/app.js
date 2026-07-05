@@ -1068,7 +1068,8 @@ async function buildStats(events) {
     for (const kev of data.keyEvents ?? []) {
       const type = kev.type?.type ?? "";
 
-      if (/^goal/.test(type)) {
+      // "goal*" = gol en juego; "penalty" = penal en partido (ESPN lo distingue de tanda que va en penaltyShootout)
+      if (/^goal/.test(type) || type === "penalty") {
         const scorer   = kev.participants?.[0]?.athlete;
         const assister = kev.participants?.[1]?.athlete;
         if (scorer) {
