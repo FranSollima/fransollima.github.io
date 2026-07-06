@@ -812,18 +812,18 @@ details[open].match-card > summary::after { content: "▴"; }
 
 /* Leyenda de puntuación / desempate */
 .ranking-legend {
-  margin: 12px 4px 4px;
-  padding: 8px 12px;
-  font-size: 0.72rem;
-  color: #6b7280;
-  line-height: 1.7;
-  border: 1px solid #e5e7eb;
+  margin-top: 0.6rem;
+  padding: 0.55rem 0.85rem;
+  background: var(--c-card);
+  border: 1px solid var(--c-border);
   border-radius: 8px;
-  background: #f9fafb;
+  font-size: 0.72rem;
+  color: #555;
+  line-height: 1.7;
 }
 .ranking-legend-note { font-style: italic; }
 @media (prefers-color-scheme: dark) {
-  .ranking-legend { color: #9ca3af; background: #1f2937; border-color: #374151; }
+  .ranking-legend { color: #9ca3af; }
 }
-:root[data-theme="dark"] .ranking-legend { color: #9ca3af; background: #1f2937; border-color: #374151; }
-:root[data-theme="light"] .ranking-legend { color: #6b7280; background: #f9fafb; border-color: #e5e7eb; }
+:root[data-theme="dark"] .ranking-legend { color: #9ca3af; }
+:root[data-theme="light"] .ranking-legend { color: #555; }

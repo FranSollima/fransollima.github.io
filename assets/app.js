@@ -962,7 +962,7 @@ function buildGroupStandings(events, baseStandings) {
 
   // Track latest match badge — group stage only (KO matches must not bleed into standings)
   for (const ev of events) {
-    if (ev.matchNum >= 73) continue;
+    if (koNumberMap.get(ev.id)) continue;
     if (!ev.homeAbbr || !ev.awayAbbr) continue;
     if (ev.state !== "in" && ev.state !== "post") continue;
     const home = teamIndex.get(ev.homeAbbr);
