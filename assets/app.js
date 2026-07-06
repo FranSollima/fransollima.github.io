@@ -724,9 +724,9 @@ function badgeHTML(state) {
 }
 
 function ptsClass(pts, estado) {
-  if (pts === null) return estado === "pre" || estado === "no_encontrado" ? "pts-pending" : "pts-pending";
-  if (pts === 3) return "pts-3";
-  if (pts === 1) return "pts-1";
+  if (pts === null) return "pts-pending";
+  if (pts >= 3) return "pts-high";  // exacto (3) o exacto+llave (4)
+  if (pts >= 1) return "pts-low";   // resultado (1) o resultado+llave (2)
   return "pts-0";
 }
 
