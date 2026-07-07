@@ -770,11 +770,12 @@ function renderRanking(ranking, hasLive, jugMap) {
     </tr>`;
   }
   html += "</tbody></table>";
-  html += `<p class="ranking-legend">
+  html += `<details class="ranking-legend">
+    <summary>Puntuación y desempate</summary>
     Puntuación: exacto = 3 pts · resultado = 1 pt · llave acertada = 1 pt *<br>
     Desempate: puntos → partidos acertados → llaves * → exactos *<br>
     <span class="ranking-legend-note">* solo en fase eliminatoria</span>
-  </p>`;
+  </details>`;
   return html;
 }
 

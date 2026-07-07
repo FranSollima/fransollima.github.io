@@ -813,14 +813,31 @@ details[open].match-card > summary::after { content: "▴"; }
 /* Leyenda de puntuación / desempate */
 .ranking-legend {
   margin-top: 0.6rem;
-  padding: 0.55rem 0.85rem;
+  padding: 0.35rem 0.85rem;
   background: var(--c-card);
   border: 1px solid var(--c-border);
   border-radius: 8px;
   font-size: 0.72rem;
   color: #555;
   line-height: 1.7;
+  cursor: pointer;
 }
+.ranking-legend summary {
+  font-weight: 600;
+  padding: 0.2rem 0;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  user-select: none;
+}
+.ranking-legend summary::before {
+  content: "▶";
+  font-size: 0.6rem;
+  transition: transform 0.15s;
+}
+.ranking-legend[open] summary::before { transform: rotate(90deg); }
+.ranking-legend[open] summary { margin-bottom: 0.3rem; }
 .ranking-legend-note { font-style: italic; }
 @media (prefers-color-scheme: dark) {
   .ranking-legend { color: #9ca3af; }
