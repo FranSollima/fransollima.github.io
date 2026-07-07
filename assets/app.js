@@ -444,8 +444,12 @@ function buildRankingKO(koScored) {
     else if (s.ptsResult > 0) j.resultados++;
     j.puntos += s.puntos ?? 0;
   }
+  // Desempate KO: puntos → total acertados (exactos+resultados) → llaves → exactos
   return [...map.values()].sort((a, b) =>
-    b.puntos - a.puntos || b.llaves - a.llaves || b.exactos - a.exactos
+    b.puntos - a.puntos ||
+    (b.exactos + b.resultados) - (a.exactos + a.resultados) ||
+    b.llaves - a.llaves ||
+    b.exactos - a.exactos
   );
 }
 
@@ -575,10 +579,13 @@ function buildRanking(scored) {
       else if (s.puntos === 1) j.resultados++;
     }
   }
+  // Desempate grupos: puntos → total acertados (exactos+resultados) → exactos
   return [...map.values()].sort((a, b) => {
     const ta = a.ptsPost + a.ptsLive;
     const tb = b.ptsPost + b.ptsLive;
-    return tb - ta || b.resultados - a.resultados;
+    return tb - ta ||
+      (b.exactos + b.resultados) - (a.exactos + a.resultados) ||
+      b.exactos - a.exactos;
   });
 }
 
@@ -763,7 +770,7 @@ function renderRanking(ranking, hasLive, jugMap) {
   html += "</tbody></table>";
   html += `<p class="ranking-legend">
     Puntuación: exacto = 3 pts · resultado = 1 pt · llave acertada = 1 pt *<br>
-    Desempate: puntos → resultados → llaves *<br>
+    Desempate: puntos → partidos acertados → llaves * → exactos *<br>
     <span class="ranking-legend-note">* solo en fase eliminatoria</span>
   </p>`;
   return html;
