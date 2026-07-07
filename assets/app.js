@@ -756,7 +756,9 @@ function renderRanking(ranking, hasLive, jugMap) {
     const prev = ranking[i - 1];
     const total     = r.ptsPost + r.ptsLive;
     const prevTotal = prev ? prev.ptsPost + prev.ptsLive : null;
-    const tied = i > 0 && total === prevTotal && r.resultados === prev.resultados;
+    const tied = i > 0 && total === prevTotal &&
+      (r.exactos + r.resultados) === (prev.exactos + prev.resultados) &&
+      r.exactos === prev.exactos;
     if (i > 0 && !tied) displayRank = i + 1;
     const nombre = jugMap?.get(r.jugador) ?? r.jugador;
     html += `<tr>
@@ -792,7 +794,13 @@ function renderRankingKO(ranking, jugMap, hasLive) {
   let displayRank = 1;
   for (let i = 0; i < ranking.length; i++) {
     const r = ranking[i];
-    if (i > 0 && ranking[i].puntos !== ranking[i - 1].puntos) displayRank = i + 1;
+    const prev = ranking[i - 1];
+    const tied = i > 0 &&
+      r.puntos === prev.puntos &&
+      (r.exactos + r.resultados) === (prev.exactos + prev.resultados) &&
+      r.llaves === prev.llaves &&
+      r.exactos === prev.exactos;
+    if (i > 0 && !tied) displayRank = i + 1;
     const nombre = jugMap?.get(r.jugador) ?? r.jugador;
     html += `<tr>
       <td class="col-rank">${displayRank}</td>
