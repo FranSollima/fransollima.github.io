@@ -86,7 +86,16 @@ function calcPuntos(predG1, predG2, realG1, realG2) {
 
 `buildRanking` separa `ptsPost` (partidos terminados) y `ptsLive` (partidos en vivo). El ranking ordena por `ptsPost + ptsLive` pero la UI muestra `"44 (+1)"` para que se vea la diferencia. Al terminar el partido en vivo, el `(+X)` desaparece y el número base sube.
 
-Criterios de desempate en el ranking: total de puntos → cantidad de exactos → nombre alfabético.
+Criterios de desempate:
+
+- **Grupos** (`buildRanking`): puntos → acertados (`exactos + resultados`) → exactos.
+- **Eliminatorias** (`buildRankingKO`): puntos → acertados (`exactos + resultados`) → llaves → exactos.
+
+`exactos` y `resultados` son conteos **disjuntos** (un exacto no cuenta también como resultado), por eso el segundo criterio los suma: si no, quien acertó el marcador exacto quedaría en desventaja frente a quien solo acertó el resultado.
+
+Los puntos de stats entran en el total de eliminatorias pero **no** son un criterio de desempate: llegado el cuarto criterio, `puntos`, `acertados` y `llaves` ya están fijos, con lo cual `stats = const − 2·exactos` y desempatar por stats sería idéntico a desempatar por *menos* exactos.
+
+El número de posición (`#`) que muestra la UI solo avanza cuando cambia **alguno** de los criterios; si empatan en todos, comparten número.
 
 ### Ordenamiento del panel Partidos
 
@@ -118,6 +127,22 @@ JUGADOR;PARTIDO;EQUIPO 1;EQUIPO 2;GOLES 1;GOLES 2
 - `JUGADOR`: código corto que matchea con `jugadores.csv`
 - `EQUIPO 1` / `EQUIPO 2`: nombre en español, tiene que tener entrada en `equipos.csv`
 - Si un equipo no tiene mapeo, se loguea `⚠ Sin mapeo en equipos.csv: "..."` en consola y ese partido queda con `estado: "sin_mapeo"`
+
+### predicciones_stats.csv
+
+Formato **ancho**: una fila por stat, una columna por jugador.
+
+```
+STAT;PUNTOS;CORRECTA;LS;DM;FF;FS;JMS;ML;NA;JPS;DB;TI
+```
+
+- Las columnas que no son `STAT` / `PUNTOS` / `CORRECTA` se interpretan como códigos de jugador (mismos códigos que `jugadores.csv`).
+- `PUNTOS`: cuánto vale acertar esa stat. Hoy: 5 para todas, salvo `PRIMER PUESTO` = 10 y `TERCER PUESTO` = 3.
+- `CORRECTA`: la respuesta real, **cargada a mano**. No sale de ESPN — la solapa Stats (`buildStats()`) es independiente de esto y no se toca.
+- Si `CORRECTA` está vacía, la stat se ignora (sirve para dejarla cargada antes de que se resuelva).
+- La comparación se hace con `normStat()`: sin acentos, espacios colapsados, mayúsculas.
+- Los puntos se suman **solo al ranking de eliminatorias** (`buildRankingKO`), nunca a grupos. Se agregan después del loop por predicción porque son por jugador, no por partido.
+- Jugadores con stats cargadas pero sin filas en `predicciones_ko.csv` quedan afuera del ranking (no aparecen).
 
 ### equipos.csv
 

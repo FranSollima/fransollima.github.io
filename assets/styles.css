@@ -173,7 +173,10 @@ header h1 {
 .col-ko-total { width: 3rem; text-align: center; font-weight: 700; white-space: nowrap; }
 .live-dot-th  { margin-left: 2px; vertical-align: super; width: 5px; height: 5px; }
 .ranking-table-ko th,
-.ranking-table-ko td { padding: 0.38rem 0.4rem; }
+.ranking-table-ko td { padding: 0.38rem 0.3rem; }
+/* 4 columnas numéricas + total: se aprieta un poco para que entre en mobile */
+.ranking-table-ko .col-ko-num { width: 2.9rem; }
+.ranking-table-ko thead th { font-size: 0.62rem; letter-spacing: 0.02em; }
 
 .prov-mark { color: var(--c-pts1); font-size: 0.75em; margin-left: 2px; }
 .prov-note { font-size: 0.72rem; color: var(--c-pts1); padding: 0.4rem 0.75rem; }

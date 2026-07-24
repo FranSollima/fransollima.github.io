@@ -24,6 +24,7 @@ let displayMap         = null;
 let jugadoresMap       = null;
 let predicciones       = null;
 let prediccionesKO     = null;
+let statsPuntos        = new Map(); // código jugador → puntos de stats (solo eliminatorias)
 let groupStandingsData = null; // fetched once at init from ESPN standings endpoint
 const probsCache    = new Map(); // ev.id → last valid { pWin, pDraw, pLose, source }
 let lastEvents     = [];        // último fetch de ESPN, para usar en stats lazy
@@ -141,6 +142,40 @@ async function loadPredKO() {
     }).filter(r => !isNaN(r.matchNum) && r.jugador);
   } catch {
     return [];
+  }
+}
+
+// ─── PREDICCIONES DE STATS (solo suman en eliminatorias) ─────────────────────
+// predicciones_stats.csv → STAT;PUNTOS;CORRECTA;<COD_JUGADOR>;<COD_JUGADOR>;...
+// Una fila por stat. Cada jugador cobra PUNTOS si su celda coincide con CORRECTA.
+// Los valores no salen de ESPN: la respuesta correcta se carga a mano en el CSV.
+const STAT_META_COLS = new Set(["STAT", "PUNTOS", "CORRECTA"]);
+
+// Normaliza para comparar: sin acentos, espacios colapsados, mayúsculas.
+function normStat(s) {
+  return (s ?? "")
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, " ").trim().toUpperCase();
+}
+
+async function loadPredStats() {
+  try {
+    const text = await loadText("./predicciones_stats.csv");
+    const rows = parseCSV(text);
+    if (!rows.length) return new Map();
+    const jugadores = Object.keys(rows[0]).filter(h => h && !STAT_META_COLS.has(h));
+    const puntos = new Map(jugadores.map(j => [j, 0]));
+    for (const row of rows) {
+      const valor    = parseInt(row["PUNTOS"], 10) || 0;
+      const correcta = normStat(row["CORRECTA"]);
+      if (!correcta) continue; // stat todavía sin resolver
+      for (const j of jugadores) {
+        if (normStat(row[j]) === correcta) puntos.set(j, puntos.get(j) + valor);
+      }
+    }
+    return puntos;
+  } catch {
+    return new Map();
   }
 }
 
@@ -432,17 +467,23 @@ function scoreKO(preds, koEventByNum) {
   });
 }
 
-function buildRankingKO(koScored) {
+function buildRankingKO(koScored, statsPuntos) {
   const map = new Map();
   for (const s of koScored) {
     if (!map.has(s.jugador)) {
-      map.set(s.jugador, { jugador: s.jugador, llaves: 0, exactos: 0, resultados: 0, puntos: 0 });
+      map.set(s.jugador, { jugador: s.jugador, llaves: 0, exactos: 0, resultados: 0, stats: 0, puntos: 0 });
     }
     const j = map.get(s.jugador);
     if (s.llave === true)  j.llaves++;
     if (s.ptsExacto > 0)   j.exactos++;
     else if (s.ptsResult > 0) j.resultados++;
     j.puntos += s.puntos ?? 0;
+  }
+  // Puntos de stats: por jugador (no por partido), así que se suman al final.
+  // Jugadores con stats cargadas pero sin predicciones de KO quedan afuera.
+  for (const j of map.values()) {
+    j.stats = statsPuntos?.get(j.jugador) ?? 0;
+    j.puntos += j.stats;
   }
   // Desempate KO: puntos → total acertados (exactos+resultados) → llaves → exactos
   return [...map.values()].sort((a, b) =>
@@ -773,6 +814,7 @@ function renderRanking(ranking, hasLive, jugMap) {
   html += `<details class="ranking-legend">
     <summary>Puntuación y desempate</summary>
     Puntuación: exacto = 3 pts · resultado = 1 pt · llave acertada = 1 pt *<br>
+    Stats *: 5 pts cada una, salvo primer puesto = 10 pts y tercer puesto = 3 pts<br>
     Desempate: puntos → partidos acertados → llaves * → exactos *<br>
     <span class="ranking-legend-note">* solo en fase eliminatoria</span>
   </details>`;
@@ -790,6 +832,7 @@ function renderRankingKO(ranking, jugMap, hasLive) {
       <th class="col-ko-num" title="Llaves predichas correctamente">Llaves</th>
       <th class="col-ko-num" title="Marcador exacto">Exactos</th>
       <th class="col-ko-num" title="Resultado correcto">Result.</th>
+      <th class="col-ko-num" title="Puntos por stats acertadas">Stats</th>
       <th class="col-ko-total">Total ${liveDot}</th>
     </tr></thead><tbody>`;
   let displayRank = 1;
@@ -809,6 +852,7 @@ function renderRankingKO(ranking, jugMap, hasLive) {
       <td class="col-ko-num">${r.llaves}</td>
       <td class="col-ko-num">${r.exactos}</td>
       <td class="col-ko-num">${r.resultados}</td>
+      <td class="col-ko-num">${r.stats}</td>
       <td class="col-ko-total">${r.puntos}</td>
     </tr>`;
   }
@@ -1348,7 +1392,7 @@ async function refresh() {
       if (num) koEventByNum.set(num, ev);
     }
     const koScored  = scoreKO(prediccionesKO ?? [], koEventByNum);
-    const koRanking = buildRankingKO(koScored);
+    const koRanking = buildRankingKO(koScored, statsPuntos);
     const groups    = groupByMatch(scored, events, koScored);
 
     // Primera carga: auto-abrir partidos en vivo; después preservar estado del usuario
@@ -1420,6 +1464,7 @@ async function init() {
     jugadoresMap   = await loadJugadores();
     predicciones   = await loadPredicciones(equiposMap);
     prediccionesKO = await loadPredKO();
+    statsPuntos    = await loadPredStats();
   } catch (err) {
     showError(err.message);
     return;
