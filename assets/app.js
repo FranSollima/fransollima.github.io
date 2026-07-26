@@ -427,9 +427,11 @@ function scoreKO(preds, koEventByNum) {
     const awayKnown = isRealAbbr(realAway);
 
     // Evaluate llave as soon as at least one team is known
+    const predSet = new Set([pred.abbr1, pred.abbr2].filter(Boolean));
+    const matched = (homeKnown && predSet.has(realHome) ? 1 : 0) +
+                    (awayKnown && predSet.has(realAway) ? 1 : 0);
     let llave = null, ptsLlave = 0;
     if (!isR32 && (homeKnown || awayKnown)) {
-      const predSet = new Set([pred.abbr1, pred.abbr2].filter(Boolean));
       const mHome = !homeKnown || predSet.has(realHome);
       const mAway = !awayKnown || predSet.has(realAway);
       if (!mHome || !mAway) {
@@ -444,6 +446,13 @@ function scoreKO(preds, koEventByNum) {
     if (ev.state === "pre") return { ...base, event: ev, llave, ptsLlave, puntos: ptsLlave };
     if (ev.homeScore === null || ev.awayScore === null) {
       return { ...base, event: ev, estado: ev.state, llave };
+    }
+
+    // Sin ningún equipo en común no hay marcador que comparar: homeIsAbbr1 daría
+    // false y alinearía los goles al revés, regalando puntos por un partido que
+    // el jugador no predijo. Solo puntúa el marcador si acertó al menos un equipo.
+    if (matched === 0) {
+      return { ...base, event: ev, estado: ev.state, llave, ptsLlave, puntos: ptsLlave };
     }
 
     // Align predicted goals to home/away order

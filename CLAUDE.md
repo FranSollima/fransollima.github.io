@@ -82,6 +82,16 @@ function calcPuntos(predG1, predG2, realG1, realG2) {
 
 3 puntos y 1 punto son mutuamente excluyentes (no se acumulan).
 
+### Marcador en eliminatorias: regla parcial
+
+En KO el jugador predice también *quiénes* juegan, así que el marcador se puntúa según cuántos equipos acertó (`matched` en `scoreKO`):
+
+- **2 equipos** (llave acertada): cobra la llave y se puntúa el marcador normal.
+- **1 equipo**: no cobra llave, pero **sí** se puntúa el marcador. `homeIsAbbr1` alinea los goles al equipo que acertó, así que "predijo que Inglaterra ganaba 2-1" sigue valiendo aunque el rival haya sido otro.
+- **0 equipos**: no se puntúa nada. `scoreKO` corta antes del alineado.
+
+El corte de `matched === 0` es **obligatorio**, no una optimización: `homeIsAbbr1` es un booleano sin caso "ninguno coincide", así que da `false` e **invierte** la predicción, alineando `goles2` al local. Sin la guarda, quien predijo `USA-POR 0-2` cobra por un `ESP 2-1 BEL` porque el 2 termina del lado del local — y quien predijo lo mismo al revés (`POR-USA 2-0`) no cobra. Los puntos salían del orden en que se tipearon los equipos.
+
 ### Puntos provisorios vs confirmados
 
 `buildRanking` separa `ptsPost` (partidos terminados) y `ptsLive` (partidos en vivo). El ranking ordena por `ptsPost + ptsLive` pero la UI muestra `"44 (+1)"` para que se vea la diferencia. Al terminar el partido en vivo, el `(+X)` desaparece y el número base sube.
